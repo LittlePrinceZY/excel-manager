@@ -17,7 +17,7 @@ const { requireAuth, requireAdmin } = require('../utils/middleware');
 
 // 文件上传配置
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'data', 'uploads')),
   filename: (req, file, cb) => cb(null, 'materials_' + Date.now() + path.extname(file.originalname)),
 });
 
