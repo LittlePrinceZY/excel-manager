@@ -9,6 +9,7 @@ const MATERIALS_FILE = path.join(__dirname, '..', 'data', 'materials.json');
 const APPLICATIONS_FILE = path.join(__dirname, '..', 'data', 'applications.json');
 const DEPTS_FILE = path.join(__dirname, '..', 'data', 'departments.json');
 const QUOTAS_FILE = path.join(__dirname, '..', 'data', 'quotas.json');
+const BROADCAST_FILE = path.join(__dirname, '..', 'data', 'broadcast.json');
 
 // ========== 部门管理 ==========
 function readDepts() {
@@ -137,6 +138,43 @@ function saveMaterials(materials, uploadedBy) {
   return materials;
 }
 
+// 手动添加单个物资
+function addMaterial(name, price, spec, addedBy) {
+  const db = readMaterials();
+  const material = {
+    id: require('uuid').v4(),
+    name: name.trim(),
+    price: parseFloat(price) || 0,
+    spec: (spec || '').trim(),
+    createdAt: new Date().toISOString(),
+    addedBy: addedBy || 'admin',
+    source: 'manual'
+  };
+  db.materials.push(material);
+  writeMaterials(db);
+  return material;
+}
+
+// 更新物资
+function updateMaterial(id, fields) {
+  const db = readMaterials();
+  const idx = db.materials.findIndex(m => m.id === id);
+  if (idx === -1) return null;
+  db.materials[idx] = { ...db.materials[idx], ...fields };
+  writeMaterials(db);
+  return db.materials[idx];
+}
+
+// 删除物资
+function deleteMaterial(id) {
+  const db = readMaterials();
+  const idx = db.materials.findIndex(m => m.id === id);
+  if (idx === -1) return false;
+  db.materials.splice(idx, 1);
+  writeMaterials(db);
+  return true;
+}
+
 // ========== 申领记录管理 ==========
 function readApplications() {
   if (!fs.existsSync(APPLICATIONS_FILE)) return { applications: [] };
@@ -211,6 +249,34 @@ function getDepartmentRemainingQuota(deptId, month) {
   return (dept.quota || 0) - used;
 }
 
+// ========== 广播管理 ==========
+function readBroadcast() {
+  if (!fs.existsSync(BROADCAST_FILE)) return { content: '', updatedAt: null, updatedBy: null };
+  try {
+    return JSON.parse(fs.readFileSync(BROADCAST_FILE, 'utf8'));
+  } catch {
+    return { content: '', updatedAt: null, updatedBy: null };
+  }
+}
+
+function writeBroadcast(data) {
+  fs.writeFileSync(BROADCAST_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function getBroadcast() {
+  return readBroadcast();
+}
+
+function setBroadcast(content, updatedBy) {
+  const data = {
+    content: content || '',
+    updatedAt: new Date().toISOString(),
+    updatedBy: updatedBy || 'admin'
+  };
+  writeBroadcast(data);
+  return data;
+}
+
 module.exports = {
   // 部门
   getDepartments,
@@ -224,6 +290,9 @@ module.exports = {
   getMaterialById,
   parseMaterialsExcel,
   saveMaterials,
+  addMaterial,
+  updateMaterial,
+  deleteMaterial,
   // 申领
   getApplications,
   getApplicationsByUser,
@@ -234,4 +303,7 @@ module.exports = {
   // 额度
   getDepartmentUsedQuota,
   getDepartmentRemainingQuota,
+  // 广播
+  getBroadcast,
+  setBroadcast,
 };

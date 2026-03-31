@@ -202,6 +202,9 @@ tr:hover td { background: #f8fafc; }
         <div class="nav-item" data-page="materials" onclick="navigate('materials')">
           <span class="nav-icon">📦</span><span>物资申报</span>
         </div>
+        <div class="nav-item admin-only" data-page="applications" onclick="navigate('applications')">
+          <span class="nav-icon">📋</span><span>申领管理</span>
+        </div>
         <div class="nav-item admin-only" data-page="users" onclick="navigate('users')">
           <span class="nav-icon">👥</span><span>用户管理</span>
         </div>
@@ -331,12 +334,12 @@ document.getElementById('loginPass').addEventListener('keydown', e => { if (e.ke
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-  const titles = { dashboard:'首页', files:'文件管理', search:'数据查询', materials:'物资申报', users:'用户管理', departments:'部门管理', logs:'操作日志', password:'修改密码' };
+  const titles = { dashboard:'首页', files:'文件管理', search:'数据查询', materials:'物资申报', applications:'申领管理', users:'用户管理', departments:'部门管理', logs:'操作日志', password:'修改密码' };
   document.getElementById('pageTitle').textContent = titles[page] || page;
   const content = document.getElementById('pageContent');
   content.innerHTML = '<div style="color:#94a3b8;padding:40px;text-align:center;">加载中...</div>';
 
-  const pages = { dashboard: renderDashboard, files: renderFiles, search: renderSearch, materials: renderMaterials, users: renderUsers, departments: renderDepartments, logs: renderLogs, password: renderPassword };
+  const pages = { dashboard: renderDashboard, files: renderFiles, search: renderSearch, materials: renderMaterials, applications: renderApplications, users: renderUsers, departments: renderDepartments, logs: renderLogs, password: renderPassword };
   if (pages[page]) pages[page]();
 }
 
@@ -924,24 +927,44 @@ let departmentsList = [];
 async function renderMaterials() {
   const el = document.getElementById('pageContent');
   
-  // 获取物资清单和额度信息
-  const [materialsRes, quotaRes] = await Promise.all([
+  // 获取物资清单、额度信息和广播
+  const [materialsRes, quotaRes, broadcastRes] = await Promise.all([
     api('GET', '/api/materials/list'),
-    api('GET', '/api/materials/quota')
+    api('GET', '/api/materials/quota'),
+    api('GET', '/api/materials/broadcast')
   ]);
   
   materialsList = materialsRes?.materials || [];
   const quota = quotaRes || { quota: 0, used: 0, remaining: 0, departmentName: '' };
+  const broadcast = broadcastRes?.broadcast || {};
   
-  let html = `
-    <div class="card">
-      <div class="card-title">📦 物资申报`;
+  let html = '';
   
-  if (currentUser?.role === 'admin') {
-    html += ` <button class="btn btn-sm btn-primary" onclick="showUploadMaterials()">上传物资清单</button>`;
+  // 广播区域（管理员可编辑，普通用户只读）
+  if (broadcast.content || currentUser?.role === 'admin') {
+    html += `
+    <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b;">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📢 公告广播</span>
+        ${currentUser?.role === 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="editBroadcast()">编辑广播</button>` : ''}
+      </div>
+      <div style="color: #92400e; line-height: 1.6; white-space: pre-wrap;">${broadcast.content ? escHtml(broadcast.content) : '暂无公告'}</div>
+      ${broadcast.updatedAt ? `<div style="color: #a16207; font-size: 12px; margin-top: 8px;">更新于: ${new Date(broadcast.updatedAt).toLocaleString('zh-CN')}</div>` : ''}
+    </div>`;
   }
   
-  html += `</div>`;
+  html += `
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📦 物资申报</span>
+        <div>
+          ${currentUser?.role === 'admin' ? `
+            <button class="btn btn-sm btn-primary" onclick="showAddMaterial()">+ 添加物资</button>
+            <button class="btn btn-sm btn-secondary" onclick="showUploadMaterials()">上传Excel</button>
+            <button class="btn btn-sm btn-secondary" onclick="showManageMaterials()">管理物资</button>
+          ` : ''}
+        </div>
+      </div>`;
   
   // 显示额度信息（普通用户）
   if (currentUser?.role === 'user') {
@@ -1153,6 +1176,435 @@ async function doUploadMaterials() {
   } else {
     document.getElementById('uploadError').textContent = data.error || '上传失败';
   }
+}
+
+// 手动添加物资
+function showAddMaterial() {
+  const html = `
+    <div class="form-group">
+      <label>物资名称</label>
+      <input type="text" id="newMaterialName" placeholder="如：A4打印纸">
+    </div>
+    <div class="form-group">
+      <label>单价（元）</label>
+      <input type="number" id="newMaterialPrice" value="0" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>规格</label>
+      <input type="text" id="newMaterialSpec" placeholder="如：500张/包">
+    </div>`;
+  
+  showModal('添加物资', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doAddMaterial()">保存</button>
+  `);
+}
+
+async function doAddMaterial() {
+  const name = document.getElementById('newMaterialName').value.trim();
+  const price = document.getElementById('newMaterialPrice').value;
+  const spec = document.getElementById('newMaterialSpec').value.trim();
+  
+  if (!name) { toast('请输入物资名称', 'error'); return; }
+  
+  const res = await api('POST', '/api/materials/material', { name, price, spec });
+  if (res && res.success) {
+    closeModal();
+    toast('物资添加成功', 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '添加失败', 'error');
+  }
+}
+
+// 管理物资列表
+async function showManageMaterials() {
+  const res = await api('GET', '/api/materials/list');
+  const materials = res?.materials || [];
+  
+  let html = `
+    <div style="max-height: 400px; overflow-y: auto;">
+      <table style="width: 100%; font-size: 13px;">
+        <thead>
+          <tr>
+            <th>物资名称</th>
+            <th>规格</th>
+            <th>单价</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>`;
+  
+  materials.forEach(m => {
+    html += `
+      <tr>
+        <td>${escHtml(m.name)}</td>
+        <td>${escHtml(m.spec || '-')}</td>
+        <td>¥${(m.price || 0).toFixed(2)}</td>
+        <td>
+          <button class="btn btn-xs btn-primary" onclick="editMaterial('${m.id}', '${escHtml(m.name)}', ${m.price || 0}, '${escHtml(m.spec || '')}')">编辑</button>
+          <button class="btn btn-xs btn-danger" onclick="deleteMaterial('${m.id}', '${escHtml(m.name)}')">删除</button>
+        </td>
+      </tr>`;
+  });
+  
+  html += '</tbody></table></div>';
+  
+  if (materials.length === 0) {
+    html = '<p style="color: #999; padding: 20px;">暂无物资，请先添加</p>';
+  }
+  
+  showModal('管理物资', html, `<button class="btn btn-secondary" onclick="closeModal()">关闭</button>`);
+}
+
+async function editMaterial(id, name, price, spec) {
+  const html = `
+    <div class="form-group">
+      <label>物资名称</label>
+      <input type="text" id="editMatName" value="${escHtml(name)}">
+    </div>
+    <div class="form-group">
+      <label>单价（元）</label>
+      <input type="number" id="editMatPrice" value="${price}" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>规格</label>
+      <input type="text" id="editMatSpec" value="${escHtml(spec)}">
+    </div>`;
+  
+  showModal('编辑物资', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doEditMaterial('${id}')">保存</button>
+  `);
+}
+
+async function doEditMaterial(id) {
+  const name = document.getElementById('editMatName').value.trim();
+  const price = document.getElementById('editMatPrice').value;
+  const spec = document.getElementById('editMatSpec').value.trim();
+  
+  if (!name) { toast('请输入物资名称', 'error'); return; }
+  
+  const res = await api('PUT', `/api/materials/material/${id}`, { name, price, spec });
+  if (res && res.success) {
+    closeModal();
+    toast('物资更新成功', 'success');
+    showManageMaterials();
+  } else {
+    toast(res?.error || '更新失败', 'error');
+  }
+}
+
+async function deleteMaterial(id, name) {
+  if (!confirm(`确定删除物资「${name}」吗？`)) return;
+  
+  const res = await api('DELETE', `/api/materials/material/${id}`);
+  if (res && res.success) {
+    toast('删除成功', 'success');
+    showManageMaterials();
+  } else {
+    toast(res?.error || '删除失败', 'error');
+  }
+}
+
+// 编辑广播
+async function editBroadcast() {
+  const res = await api('GET', '/api/materials/broadcast');
+  const broadcast = res?.broadcast || {};
+  
+  const html = `
+    <div class="form-group">
+      <label>广播内容</label>
+      <textarea id="broadcastContent" rows="4" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; resize: vertical;">${escHtml(broadcast.content || '')}</textarea>
+      <p style="color: #666; font-size: 12px; margin-top: 8px;">支持多行文本，普通用户将在物资申报页面看到此公告</p>
+    </div>`;
+  
+  showModal('编辑广播公告', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doSaveBroadcast()">保存</button>
+  `);
+}
+
+async function doSaveBroadcast() {
+  const content = document.getElementById('broadcastContent').value;
+  
+  const res = await api('POST', '/api/materials/broadcast', { content });
+  if (res && res.success) {
+    closeModal();
+    toast('广播更新成功', 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '更新失败', 'error');
+  }
+}
+
+// ===================== 申领管理模块（管理员） =====================
+async function renderApplications() {
+  const el = document.getElementById('pageContent');
+  
+  // 获取所有申领记录和部门列表
+  const [appsRes, deptsRes] = await Promise.all([
+    api('GET', '/api/materials/all-applications'),
+    api('GET', '/api/departments')
+  ]);
+  
+  const apps = appsRes?.applications || [];
+  const depts = deptsRes?.departments || [];
+  departmentsList = depts;
+  
+  // 按状态分类统计
+  const pendingCount = apps.filter(a => a.status === 'pending').length;
+  const approvedCount = apps.filter(a => a.status === 'approved').length;
+  const rejectedCount = apps.filter(a => a.status === 'rejected').length;
+  const totalAmount = apps.filter(a => a.status === 'approved').reduce((sum, a) => sum + (a.totalAmount || 0), 0);
+  
+  let html = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-number" style="color: #f59e0b;">${pendingCount}</div><div class="stat-label">待审批</div></div>
+      <div class="stat-card"><div class="stat-number" style="color: #10b981;">${approvedCount}</div><div class="stat-label">已通过</div></div>
+      <div class="stat-card"><div class="stat-number" style="color: #ef4444;">${rejectedCount}</div><div class="stat-label">已拒绝</div></div>
+      <div class="stat-card"><div class="stat-number" style="color: #0ea5e9;">¥${totalAmount.toFixed(0)}</div><div class="stat-label">已通过金额</div></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📋 申领记录管理（${apps.length} 条）</span>
+        <div>
+          <button class="btn btn-sm btn-secondary" onclick="exportApplications()">📥 导出Excel</button>
+        </div>
+      </div>
+      
+      <div class="search-bar" style="margin-bottom: 16px;">
+        <input type="text" id="appSearchKeyword" placeholder="搜索物资、申请人、部门..." onkeydown="if(event.key==='Enter')filterApplications()">
+        <select id="appSearchStatus" onchange="filterApplications()">
+          <option value="">全部状态</option>
+          <option value="pending">待审批</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+        <select id="appSearchDept" onchange="filterApplications()">
+          <option value="">全部部门</option>
+          ${depts.map(d => `<option value="${d.id}">${escHtml(d.name)}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="filterApplications()">筛选</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAppFilter()">重置</button>
+      </div>
+      
+      <div class="table-wrap">
+        <table id="applicationsTable">
+          <thead>
+            <tr>
+              <th>申请时间</th>
+              <th>申请人</th>
+              <th>部门</th>
+              <th>物资名称</th>
+              <th>规格</th>
+              <th>单价</th>
+              <th>数量</th>
+              <th>金额</th>
+              <th>状态</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="applicationsTableBody">`;
+  
+  html += renderApplicationsRows(apps);
+  
+  html += `</tbody></table></div>`;
+  
+  if (apps.length === 0) {
+    html += '<p style="color: #999; padding: 20px; text-align: center;">暂无申领记录</p>';
+  }
+  
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderApplicationsRows(apps) {
+  if (apps.length === 0) {
+    return '<tr><td colspan="11" style="text-align: center; color: #999;">暂无数据</td></tr>';
+  }
+  
+  return apps.map(app => {
+    const statusClass = app.status === 'approved' ? 'badge-success' : app.status === 'rejected' ? 'badge-fail' : 'badge-warning';
+    const statusText = app.status === 'approved' ? '已通过' : app.status === 'rejected' ? '已拒绝' : '待审批';
+    
+    return `<tr data-id="${app.id}">
+      <td>${new Date(app.createdAt).toLocaleString('zh-CN')}</td>
+      <td>${escHtml(app.username)}</td>
+      <td>${escHtml(app.departmentName)}</td>
+      <td>${escHtml(app.materialName)}</td>
+      <td>${escHtml(app.materialSpec || '-')}</td>
+      <td>¥${(app.materialPrice || 0).toFixed(2)}</td>
+      <td>${app.quantity}</td>
+      <td style="font-weight: bold;">¥${(app.totalAmount || 0).toFixed(2)}</td>
+      <td><span class="badge ${statusClass}">${statusText}</span></td>
+      <td>${escHtml(app.remark || '-')}</td>
+      <td>
+        ${app.status === 'pending' ? `
+          <button class="btn btn-xs" style="background: #10b981; color: white;" onclick="updateApplicationStatus('${app.id}', 'approved')">通过</button>
+          <button class="btn btn-xs" style="background: #ef4444; color: white;" onclick="updateApplicationStatus('${app.id}', 'rejected')">拒绝</button>
+        ` : `<button class="btn btn-xs btn-secondary" onclick="editApplication('${app.id}')">编辑</button>`}
+        <button class="btn btn-xs btn-secondary" onclick="deleteApplicationRecord('${app.id}')">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterApplications() {
+  const keyword = document.getElementById('appSearchKeyword').value.toLowerCase();
+  const status = document.getElementById('appSearchStatus').value;
+  const deptId = document.getElementById('appSearchDept').value;
+  
+  const rows = document.querySelectorAll('#applicationsTableBody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const rowStatus = row.querySelector('.badge')?.textContent;
+    const matchesKeyword = !keyword || text.includes(keyword);
+    const matchesStatus = !status || 
+      (status === 'pending' && rowStatus === '待审批') ||
+      (status === 'approved' && rowStatus === '已通过') ||
+      (status === 'rejected' && rowStatus === '已拒绝');
+    
+    row.style.display = (matchesKeyword && matchesStatus) ? '' : 'none';
+  });
+}
+
+function clearAppFilter() {
+  document.getElementById('appSearchKeyword').value = '';
+  document.getElementById('appSearchStatus').value = '';
+  document.getElementById('appSearchDept').value = '';
+  filterApplications();
+}
+
+async function updateApplicationStatus(id, status) {
+  const res = await api('PUT', `/api/materials/applications/${id}`, { status });
+  if (res && res.success) {
+    toast(status === 'approved' ? '已通过该申请' : '已拒绝该申请', 'success');
+    renderApplications();
+  } else {
+    toast(res?.error || '操作失败', 'error');
+  }
+}
+
+async function editApplication(id) {
+  // 获取当前申领详情
+  const res = await api('GET', '/api/materials/all-applications');
+  const app = res?.applications?.find(a => a.id === id);
+  if (!app) { toast('申领记录不存在', 'error'); return; }
+  
+  const html = `
+    <div class="form-group">
+      <label>物资名称</label>
+      <input type="text" id="editAppMaterial" value="${escHtml(app.materialName)}" readonly style="background: #f5f5f5;">
+    </div>
+    <div class="form-group">
+      <label>申请人</label>
+      <input type="text" value="${escHtml(app.username)}" readonly style="background: #f5f5f5;">
+    </div>
+    <div class="form-group">
+      <label>数量</label>
+      <input type="number" id="editAppQty" value="${app.quantity}" min="1">
+    </div>
+    <div class="form-group">
+      <label>状态</label>
+      <select id="editAppStatus">
+        <option value="pending" ${app.status === 'pending' ? 'selected' : ''}>待审批</option>
+        <option value="approved" ${app.status === 'approved' ? 'selected' : ''}>已通过</option>
+        <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>已拒绝</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>备注</label>
+      <input type="text" id="editAppRemark" value="${escHtml(app.remark || '')}">
+    </div>`;
+  
+  showModal('编辑申领记录', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doEditApplication('${id}')">保存</button>
+  `);
+}
+
+async function doEditApplication(id) {
+  const quantity = parseInt(document.getElementById('editAppQty').value);
+  const status = document.getElementById('editAppStatus').value;
+  const remark = document.getElementById('editAppRemark').value;
+  
+  if (!quantity || quantity < 1) { toast('请输入有效数量', 'error'); return; }
+  
+  // 先获取原记录计算新金额
+  const res = await api('GET', '/api/materials/all-applications');
+  const app = res?.applications?.find(a => a.id === id);
+  if (!app) { toast('记录不存在', 'error'); return; }
+  
+  const totalAmount = app.materialPrice * quantity;
+  
+  const updateRes = await api('PUT', `/api/materials/applications/${id}`, { 
+    status, 
+    quantity, 
+    totalAmount,
+    remark 
+  });
+  
+  if (updateRes && updateRes.success) {
+    closeModal();
+    toast('更新成功', 'success');
+    renderApplications();
+  } else {
+    toast(updateRes?.error || '更新失败', 'error');
+  }
+}
+
+async function deleteApplicationRecord(id) {
+  if (!confirm('确定删除这条申领记录吗？此操作不可撤销。')) return;
+  
+  const res = await api('DELETE', `/api/materials/applications/${id}`);
+  if (res && res.success) {
+    toast('删除成功', 'success');
+    renderApplications();
+  } else {
+    toast(res?.error || '删除失败', 'error');
+  }
+}
+
+function exportApplications() {
+  const table = document.getElementById('applicationsTable');
+  if (!table) { toast('暂无数据可导出', 'error'); return; }
+  
+  // 构建CSV数据
+  const rows = [];
+  rows.push(['申请时间', '申请人', '部门', '物资名称', '规格', '单价', '数量', '金额', '状态', '备注'].join(','));
+  
+  table.querySelectorAll('tbody tr').forEach(row => {
+    if (row.style.display === 'none') return;
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 10) return;
+    
+    const rowData = [
+      cells[0].textContent,
+      cells[1].textContent,
+      cells[2].textContent,
+      cells[3].textContent,
+      cells[4].textContent,
+      cells[5].textContent.replace('¥', ''),
+      cells[6].textContent,
+      cells[7].textContent.replace('¥', ''),
+      cells[8].textContent.trim(),
+      cells[9].textContent
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    
+    rows.push(rowData);
+  });
+  
+  const csv = '\uFEFF' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `申领记录_${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  
+  toast('导出成功', 'success');
 }
 
 // ===================== 部门管理（管理员） =====================

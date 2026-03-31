@@ -5,11 +5,11 @@ const router = require('express').Router();
 const path = require('path');
 const multer = require('multer');
 const { 
-  getMaterials, parseMaterialsExcel, saveMaterials,
+  getMaterials, parseMaterialsExcel, saveMaterials, addMaterial, updateMaterial, deleteMaterial,
   getApplications, getApplicationsByUser, getApplicationsByDepartment,
   createApplication, updateApplication, deleteApplication,
   getDepartments, getDepartmentById, getDepartmentRemainingQuota,
-  getDepartmentUsedQuota
+  getDepartmentUsedQuota, getBroadcast, setBroadcast
 } = require('../utils/materials');
 const { getUserById } = require('../utils/db');
 const { addOpLog } = require('../utils/logger');
@@ -38,12 +38,30 @@ function uploadMiddleware(req, res, next) {
   });
 }
 
-// ========== 物资清单管理（管理员） ==========
+// ========== 物资清单管理 ==========
 
 // 获取当前物资清单
 router.get('/list', requireLogin, (req, res) => {
   const materials = getMaterials();
   res.json({ success: true, materials });
+});
+
+// 获取广播内容
+router.get('/broadcast', requireLogin, (req, res) => {
+  const broadcast = getBroadcast();
+  res.json({ success: true, broadcast });
+});
+
+// 设置广播内容（管理员）
+router.post('/broadcast', requireAdmin, (req, res) => {
+  const { content } = req.body;
+  const broadcast = setBroadcast(content, req.session.username);
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'update-broadcast', 
+    detail: '更新物资申领广播内容' 
+  });
+  res.json({ success: true, broadcast });
 });
 
 // 上传物资清单Excel（管理员）
@@ -62,6 +80,65 @@ router.post('/upload', requireAdmin, uploadMiddleware, (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// 手动添加物资（管理员）
+router.post('/material', requireAdmin, (req, res) => {
+  const { name, price, spec } = req.body;
+  
+  if (!name || name.trim().length === 0) {
+    return res.status(400).json({ error: '物资名称不能为空' });
+  }
+  
+  const material = addMaterial(name, price, spec, req.session.username);
+  
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'add-material', 
+    detail: `手动添加物资: ${name}, 单价: ¥${price}` 
+  });
+  
+  res.json({ success: true, material });
+});
+
+// 更新物资（管理员）
+router.put('/material/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const { name, price, spec } = req.body;
+  
+  const updates = {};
+  if (name !== undefined) updates.name = name.trim();
+  if (price !== undefined) updates.price = parseFloat(price) || 0;
+  if (spec !== undefined) updates.spec = spec.trim();
+  
+  const material = updateMaterial(id, updates);
+  if (!material) return res.status(404).json({ error: '物资不存在' });
+  
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'update-material', 
+    detail: `更新物资: ${material.name}` 
+  });
+  
+  res.json({ success: true, material });
+});
+
+// 删除物资（管理员）
+router.delete('/material/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  
+  const material = getMaterials().find(m => m.id === id);
+  if (!material) return res.status(404).json({ error: '物资不存在' });
+  
+  deleteMaterial(id);
+  
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'delete-material', 
+    detail: `删除物资: ${material.name}` 
+  });
+  
+  res.json({ success: true });
 });
 
 // ========== 申领管理 ==========
