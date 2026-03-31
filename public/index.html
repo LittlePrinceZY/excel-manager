@@ -1218,7 +1218,7 @@ async function renderMaterials() {
     <div class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b;">
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
         <span>📢 公告广播</span>
-        ${currentUser?.role === 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="editBroadcast()">编辑广播</button>` : ''}
+        ${currentUser?.role === 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="editMaterialsBroadcast()">编辑广播</button>` : ''}
       </div>
       <div style="color: #92400e; line-height: 1.6; white-space: pre-wrap;">${broadcast.content ? escHtml(broadcast.content) : '暂无公告'}</div>
       ${broadcast.updatedAt ? `<div style="color: #a16207; font-size: 12px; margin-top: 8px;">更新于: ${new Date(broadcast.updatedAt).toLocaleString('zh-CN')}</div>` : ''}
@@ -1616,8 +1616,8 @@ async function deleteMaterial(id, name) {
   }
 }
 
-// 编辑广播
-async function editBroadcast() {
+// 编辑广播（物资申报页面）
+async function editMaterialsBroadcast() {
   const res = await api('GET', '/api/materials/broadcast');
   const broadcast = res?.broadcast || {};
   
@@ -2213,11 +2213,11 @@ function startApplication(workflowId, workflowName) {
     <div id="appError" style="color: #dc2626; font-size: 13px;"></div>
   `, `
     <button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>
-    <button class="btn btn-primary btn-sm" onclick="submitApplication('${workflowId}')">提交申请</button>
+    <button class="btn btn-primary btn-sm" onclick="submitWorkflowApplication('${workflowId}')">提交申请</button>
   `);
 }
 
-async function submitApplication(workflowId) {
+async function submitWorkflowApplication(workflowId) {
   const title = document.getElementById('appTitle').value.trim();
   const content = document.getElementById('appContent').value.trim();
   const remark = document.getElementById('appRemark').value.trim();

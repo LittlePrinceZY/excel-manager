@@ -59,6 +59,7 @@ router.post('/login', async (req, res) => {
   req.session.userId = user.id;
   req.session.username = user.username;
   req.session.role = user.role;
+  req.session.departmentId = user.departmentId || null;
 
   addLoginLog({ username: user.username, ip, result: 'success', reason: '' });
 
@@ -80,10 +81,13 @@ router.post('/logout', (req, res) => {
 
 // 获取当前登录用户
 router.get('/me', requireLogin, (req, res) => {
+  const { getUserById } = require('../utils/db');
+  const user = getUserById(req.session.userId);
   res.json({
     id: req.session.userId,
     username: req.session.username,
     role: req.session.role,
+    departmentId: user?.departmentId || null,
   });
 });
 
