@@ -1931,7 +1931,11 @@ async function renderDepartments() {
   let html = `
     <div class="card">
       <div class="card-title">🏢 部门管理
-        <button class="btn btn-sm btn-primary" style="float: right;" onclick="showAddDepartment()">+ 新增部门</button>
+        <div style="float: right;">
+          <button class="btn btn-sm btn-secondary" onclick="downloadDeptTemplate()">下载模板</button>
+          <button class="btn btn-sm btn-secondary" onclick="showImportDepartments()">批量导入</button>
+          <button class="btn btn-sm btn-primary" onclick="showAddDepartment()">+ 新增部门</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -2047,6 +2051,57 @@ async function deleteDepartment(id) {
     renderDepartments();
   } else {
     toast(res?.error || '删除失败', 'error');
+  }
+}
+
+// 下载部门导入模板
+function downloadDeptTemplate() {
+  window.location.href = '/api/departments/template';
+}
+
+// 显示批量导入部门弹窗
+function showImportDepartments() {
+  showModal('批量导入部门', `
+    <div class="form-group">
+      <label>选择 Excel 文件</label>
+      <input type="file" id="deptImportFile" accept=".xlsx,.xls">
+      <p style="color: #666; font-size: 12px; margin-top: 8px;">
+        Excel 需包含：部门名称、月度额度（可选）<br>
+        如部门已存在，将更新其额度（如果提供了新额度）<br>
+        建议先下载模板查看格式
+      </p>
+    </div>
+    <div id="deptImportError" style="color: #dc2626; margin-top: 10px;"></div>`,
+    `<button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>
+     <button class="btn btn-primary btn-sm" onclick="doImportDepartments()">导入</button>`
+  );
+}
+
+// 执行批量导入部门
+async function doImportDepartments() {
+  const fileInput = document.getElementById('deptImportFile');
+  if (!fileInput.files[0]) {
+    document.getElementById('deptImportError').textContent = '请选择文件';
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  
+  const res = await fetch('/api/departments/import', {
+    method: 'POST',
+    body: formData,
+    credentials: 'include'
+  });
+  
+  const data = await res.json();
+  
+  if (data.success) {
+    closeModal();
+    toast(`导入成功: ${data.imported} 个新增, ${data.updated} 个更新${data.failed > 0 ? ', 失败 ' + data.failed + ' 个' : ''}`, data.failed > 0 ? 'warning' : 'success');
+    renderDepartments();
+  } else {
+    document.getElementById('deptImportError').textContent = data.error || '导入失败';
   }
 }
 
