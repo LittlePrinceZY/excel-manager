@@ -13,7 +13,7 @@ const {
 } = require('../utils/materials');
 const { getUserById } = require('../utils/db');
 const { addOpLog } = require('../utils/logger');
-const { requireAuth, requireAdmin } = require('../utils/middleware');
+const { requireLogin, requireAdmin } = require('../utils/middleware');
 
 // 文件上传配置
 const storage = multer.diskStorage({
@@ -41,7 +41,7 @@ function uploadMiddleware(req, res, next) {
 // ========== 物资清单管理（管理员） ==========
 
 // 获取当前物资清单
-router.get('/list', requireAuth, (req, res) => {
+router.get('/list', requireLogin, (req, res) => {
   const materials = getMaterials();
   res.json({ success: true, materials });
 });
@@ -67,7 +67,7 @@ router.post('/upload', requireAdmin, uploadMiddleware, (req, res) => {
 // ========== 申领管理 ==========
 
 // 获取当前用户的申领记录
-router.get('/my-applications', requireAuth, (req, res) => {
+router.get('/my-applications', requireLogin, (req, res) => {
   const user = getUserById(req.session.userId);
   if (!user) return res.status(404).json({ error: '用户不存在' });
   
@@ -103,7 +103,7 @@ router.get('/my-applications', requireAuth, (req, res) => {
 });
 
 // 获取部门额度信息
-router.get('/quota', requireAuth, (req, res) => {
+router.get('/quota', requireLogin, (req, res) => {
   const user = getUserById(req.session.userId);
   if (!user || !user.departmentId) {
     return res.json({ success: true, quota: 0, used: 0, remaining: 0 });
@@ -125,7 +125,7 @@ router.get('/quota', requireAuth, (req, res) => {
 });
 
 // 创建申领（普通用户）
-router.post('/apply', requireAuth, (req, res) => {
+router.post('/apply', requireLogin, (req, res) => {
   const { materialId, quantity, remark } = req.body;
   
   if (!materialId || !quantity || quantity <= 0) {
