@@ -654,7 +654,10 @@ async function renderUsers() {
               <td>${new Date(u.createdAt).toLocaleString('zh-CN')}</td>
               <td>
                 <button class="btn btn-xs btn-primary" onclick="editUser('${u.id}', '${escHtml(u.username)}', '${u.role}', '${u.departmentId || ''}')">编辑</button>
-                ${u.id !== currentUser.id ? `<button class="btn btn-xs btn-danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">删除</button>` : '<span style="color:#94a3b8;font-size:13px">（当前用户）</span>'}
+                ${u.id !== currentUser.id ? `
+                  <button class="btn btn-xs btn-secondary" onclick="resetUserPassword('${u.id}','${escHtml(u.username)}')">重置密码</button>
+                  <button class="btn btn-xs btn-danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">删除</button>
+                ` : '<span style="color:#94a3b8;font-size:13px">（当前用户）</span>'}
               </td>
             </tr>`).join('')}
           </tbody>
@@ -748,6 +751,45 @@ async function deleteUser(id, name) {
   const res = await api('DELETE', `/api/users/${id}`);
   if (res && res.success) { toast('删除成功', 'success'); renderUsers(); }
   else toast(res?.error || '删除失败', 'error');
+}
+
+// 管理员重置用户密码
+function resetUserPassword(id, username) {
+  showModal('重置密码', `
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" value="${escHtml(username)}" disabled style="background: #f5f5f5;">
+    </div>
+    <div class="form-group">
+      <label>新密码（6~50位）</label>
+      <input type="password" id="resetPass" placeholder="请输入新密码">
+    </div>
+    <div class="form-group">
+      <label>确认新密码</label>
+      <input type="password" id="resetPassConfirm" placeholder="请再次输入新密码">
+    </div>
+    <div class="error-msg" id="resetPassError"></div>`,
+    `<button class="btn btn-primary btn-sm" onclick="doResetPassword('${id}')">确认重置</button>
+     <button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>`
+  );
+}
+
+async function doResetPassword(id) {
+  const password = document.getElementById('resetPass').value;
+  const confirm = document.getElementById('resetPassConfirm').value;
+  document.getElementById('resetPassError').textContent = '';
+  
+  if (!password || !confirm) { document.getElementById('resetPassError').textContent = '请填写完整'; return; }
+  if (password !== confirm) { document.getElementById('resetPassError').textContent = '两次输入的密码不一致'; return; }
+  if (password.length < 6) { document.getElementById('resetPassError').textContent = '密码至少6位'; return; }
+  
+  const res = await api('PUT', `/api/users/${id}/password`, { password });
+  if (res && res.success) {
+    toast('密码重置成功', 'success');
+    closeModal();
+  } else {
+    document.getElementById('resetPassError').textContent = res?.error || '重置失败';
+  }
 }
 
 function showBatchDelete() {

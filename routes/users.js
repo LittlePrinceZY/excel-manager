@@ -135,6 +135,36 @@ router.put('/:id', requireAdmin, (req, res) => {
   });
 });
 
+// 管理员重置用户密码
+router.put('/:id/password', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+  
+  if (!password || password.length < 6 || password.length > 50) {
+    return res.status(400).json({ error: '密码长度需在 6~50 位之间' });
+  }
+  
+  const user = getUserById(id);
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+  
+  // 不能修改自己的密码（管理员应使用修改密码功能）
+  if (id === req.session.userId) {
+    return res.status(400).json({ error: '不能通过此接口修改自己的密码，请使用"修改密码"功能' });
+  }
+  
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync(password, 10);
+  updateUser(id, { password: hash });
+  
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'reset-password', 
+    detail: `重置用户密码: ${user.username}` 
+  });
+  
+  res.json({ success: true, message: '密码重置成功' });
+});
+
 // 删除用户
 router.delete('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
