@@ -21,32 +21,153 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
-/* ===== LOGIN ===== */
+/* ===== LOGIN - ByteDance Style ===== */
 #loginPage {
   min-height: 100vh;
   display: flex;
+  background: #ffffff;
+}
+.login-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 120px;
+  background: #ffffff;
+}
+.login-brand {
+  font-size: 24px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 60px;
+  letter-spacing: -0.5px;
+}
+.login-left h1 {
+  font-size: 48px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 16px;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+.login-subtitle {
+  font-size: 18px;
+  color: #666666;
+  margin-bottom: 48px;
+  font-weight: 400;
+}
+.login-form-group {
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+.login-form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333333;
+}
+.login-form-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-size: 15px;
+  outline: none;
+  transition: all .2s;
+  background: #fafafa;
+}
+.login-form-group input:hover {
+  border-color: #cccccc;
+  background: #ffffff;
+}
+.login-form-group input:focus {
+  border-color: #000000;
+  background: #ffffff;
+}
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 32px;
+  max-width: 400px;
+}
+.login-remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #000000;
+}
+.login-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  background: #000000;
+  color: #ffffff;
+}
+.login-btn:hover {
+  background: #333333;
+  transform: translateY(-1px);
+}
+.login-btn:active {
+  transform: translateY(0);
+}
+.login-error {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 16px;
+  max-width: 400px;
+}
+.login-right {
+  width: 45%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  position: relative;
+  overflow: hidden;
 }
-.login-box {
-  background: white;
-  border-radius: 16px;
+.login-visual {
+  text-align: center;
   padding: 40px;
-  width: 380px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
-.login-box h1 { font-size: 22px; text-align: center; margin-bottom: 8px; color: var(--primary); }
-.login-box .system-title { font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 8px; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.login-box p { text-align: center; color: var(--text-muted); margin-bottom: 28px; font-size: 14px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-.form-group input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
-.form-group input:focus { border-color: var(--primary); }
-.remember-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
-.btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
-.btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-dark); }
+.login-visual-icon {
+  font-size: 120px;
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+.login-visual-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 8px;
+}
+.login-visual-sub {
+  font-size: 14px;
+  color: #666666;
+}
+.login-decoration {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.03);
+}
+.login-decoration-1 { top: -100px; right: -100px; }
+.login-decoration-2 { bottom: -150px; left: -100px; width: 400px; height: 400px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .login-right { display: none; }
+  .login-left { padding: 40px; }
+}
 .btn-danger { background: var(--danger); color: white; }
 .btn-danger:hover { background: #b91c1c; }
 .btn-sm { width: auto; padding: 6px 14px; font-size: 13px; }
@@ -158,18 +279,116 @@ tr:hover td { background: #f8fafc; }
 .dashboard-card { margin-bottom: 20px; }
 .dashboard-card .card-title { display: flex; justify-content: space-between; align-items: center; }
 
-.broadcast-content { padding: 8px 0; }
+.broadcast-content { padding: 0; }
 .broadcast-text { line-height: 1.8; color: var(--text); }
-.broadcast-text p { margin-bottom: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border-left: 3px solid var(--primary); }
-.broadcast-meta { font-size: 12px; color: var(--text-muted); margin-top: 12px; text-align: right; }
+.broadcast-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+.broadcast-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-color: #cbd5e1;
+}
+.broadcast-item-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.broadcast-item-content {
+  flex: 1;
+}
+.broadcast-item-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.broadcast-item-desc {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.broadcast-meta { 
+  font-size: 12px; 
+  color: var(--text-muted); 
+  margin-top: 16px; 
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.broadcast-meta::before {
+  content: '📢';
+}
 
-.news-list { max-height: 280px; overflow-y: auto; }
-.news-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
-.news-item:last-child { border-bottom: none; }
-.news-hot { background: #fef2f2; color: #dc2626; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+.news-list { max-height: 320px; overflow-y: auto; }
+.news-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  padding: 12px 16px; 
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.news-item:hover { 
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.news-item:last-child { margin-bottom: 0; }
+.news-hot { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); color: #dc2626; font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; flex-shrink: 0; }
 .news-title { flex: 1; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.news-title:hover { color: var(--primary); cursor: pointer; }
-.news-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.news-title:hover { color: var(--primary); }
+.news-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+
+/* News Detail Modal */
+.news-detail-content {
+  line-height: 1.8;
+  color: #333;
+  font-size: 15px;
+}
+.news-detail-content h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+.news-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 13px;
+  color: #666;
+}
+.news-detail-body {
+  color: #444;
+  line-height: 1.8;
+}
+.news-detail-body p {
+  margin-bottom: 16px;
+}
 
 .quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .quick-action-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
@@ -227,23 +446,33 @@ tr:hover td { background: #f8fafc; }
 
 <!-- ===== 登录页 ===== -->
 <div id="loginPage">
-  <div class="login-box">
-    <div class="system-title">🏢 ZY管理系统</div>
-    <p>请使用账号登录系统</p>
-    <div class="form-group">
+  <div class="login-left">
+    <div class="login-brand">ZY管理系统</div>
+    <h1>欢迎回来</h1>
+    <p class="login-subtitle">请使用您的账号登录系统</p>
+    <div class="login-form-group">
       <label>用户名</label>
       <input type="text" id="loginUser" placeholder="请输入用户名" autocomplete="username">
     </div>
-    <div class="form-group">
+    <div class="login-form-group">
       <label>密码</label>
       <input type="password" id="loginPass" placeholder="请输入密码" autocomplete="current-password">
     </div>
-    <div class="remember-row">
+    <div class="login-remember">
       <input type="checkbox" id="rememberMe">
       <label for="rememberMe">记住我（7天免登录）</label>
     </div>
-    <button class="btn btn-primary" onclick="doLogin()">登 录</button>
-    <div class="error-msg" id="loginError"></div>
+    <button class="login-btn" onclick="doLogin()">登 录</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+  <div class="login-right">
+    <div class="login-decoration login-decoration-1"></div>
+    <div class="login-decoration login-decoration-2"></div>
+    <div class="login-visual">
+      <div class="login-visual-icon">📊</div>
+      <div class="login-visual-text">高效办公管理平台</div>
+      <div class="login-visual-sub">让工作更简单，让管理更智能</div>
+    </div>
   </div>
 </div>
 
@@ -603,26 +832,101 @@ async function getWeatherWidget() {
 }
 
 // 加载新闻
+// 新闻数据（包含详情内容）
+const newsData = [
+  { 
+    id: 1,
+    title: '国家发改委：持续推动经济高质量发展', 
+    time: '2小时前', 
+    hot: true,
+    source: '新华社',
+    content: `国家发展改革委日前表示，将继续坚持稳中求进工作总基调，完整、准确、全面贯彻新发展理念，加快构建新发展格局，着力推动高质量发展。
+
+今年以来，面对复杂严峻的国际环境和艰巨繁重的国内改革发展稳定任务，各地区各部门认真贯彻落实党中央、国务院决策部署，坚持稳中求进工作总基调，着力推动经济高质量发展，国民经济持续恢复向好。
+
+下一步，发改委将重点做好以下工作：一是持续扩大内需，促进消费恢复和扩大；二是加快建设现代化产业体系；三是深化改革扩大开放；四是防范化解重大风险；五是切实保障和改善民生。`
+  },
+  { 
+    id: 2,
+    title: '科技创新助力产业升级转型', 
+    time: '4小时前', 
+    hot: false,
+    source: '科技日报',
+    content: `随着新一轮科技革命和产业变革深入发展，科技创新已成为推动产业升级的核心驱动力。近年来，我国在人工智能、量子计算、生物技术等前沿领域取得了一系列重大突破。
+
+专家指出，科技创新不仅能够提升传统产业的效率和竞争力，还能催生新产业、新业态、新模式。未来，需要进一步加强基础研究，完善科技成果转化机制，推动产学研深度融合，为经济高质量发展提供有力支撑。`
+  },
+  { 
+    id: 3,
+    title: '数字经济发展进入新阶段', 
+    time: '6小时前', 
+    hot: false,
+    source: '经济日报',
+    content: `数字经济已成为推动经济增长的重要引擎。据统计，我国数字经济规模连续多年位居世界第二，数字技术与实体经济融合不断深化，新业态新模式蓬勃发展。
+
+当前，数字经济发展呈现出以下特点：一是数字基础设施建设加快推进；二是产业数字化转型持续深化；三是数字治理体系不断完善；四是数字经济国际合作日益密切。
+
+展望未来，随着5G、人工智能、大数据等技术的广泛应用，数字经济将迎来更大的发展空间。`
+  },
+  { 
+    id: 4,
+    title: '绿色低碳发展成为全球共识', 
+    time: '8小时前', 
+    hot: false,
+    source: '环球时报',
+    content: `应对气候变化、推动绿色低碳发展已成为全球共识。我国明确提出力争2030年前实现碳达峰、2060年前实现碳中和的目标，展现了负责任大国的担当。
+
+近年来，我国大力发展清洁能源，推进能源结构优化调整，单位国内生产总值能耗强度持续下降。同时，新能源汽车、光伏、风电等产业快速发展，已成为全球绿色低碳转型的重要力量。
+
+绿色低碳发展不仅是应对气候变化的必然选择，也是推动经济高质量发展的重要途径。`
+  },
+  { 
+    id: 5,
+    title: '人工智能技术在多领域取得突破', 
+    time: '10小时前', 
+    hot: true,
+    source: '央视新闻',
+    content: `人工智能技术正在深刻改变人类的生产生活方式。近期，国内多家科技企业在人工智能领域取得重要突破，相关技术已在医疗诊断、智能制造、智慧城市等多个领域得到应用。
+
+专家表示，人工智能技术的发展将带来生产效率的大幅提升，同时也需要关注数据安全、算法公平、就业影响等问题。未来，应坚持发展与规范并重，推动人工智能健康有序发展，使其更好地服务于经济社会发展和人民美好生活需要。`
+  },
+];
+
 async function loadNews() {
   const newsList = document.getElementById('newsList');
   if (!newsList) return;
   
-  // 使用模拟新闻数据（实际项目中可以接入新闻API）
-  const mockNews = [
-    { title: '国家发改委：持续推动经济高质量发展', time: '2小时前', hot: true },
-    { title: '科技创新助力产业升级转型', time: '4小时前', hot: false },
-    { title: '数字经济发展进入新阶段', time: '6小时前', hot: false },
-    { title: '绿色低碳发展成为全球共识', time: '8小时前', hot: false },
-    { title: '人工智能技术在多领域取得突破', time: '10小时前', hot: true },
-  ];
-  
-  newsList.innerHTML = mockNews.map(news => `
-    <div class="news-item">
+  newsList.innerHTML = newsData.map(news => `
+    <div class="news-item" onclick="showNewsDetail(${news.id})">
       ${news.hot ? '<span class="news-hot">热</span>' : ''}
       <span class="news-title">${escHtml(news.title)}</span>
       <span class="news-time">${news.time}</span>
     </div>
   `).join('');
+}
+
+// 显示新闻详情
+function showNewsDetail(newsId) {
+  const news = newsData.find(n => n.id === newsId);
+  if (!news) return;
+  
+  const content = `
+    <div class="news-detail-content">
+      <h3>${escHtml(news.title)}</h3>
+      <div class="news-detail-meta">
+        <span>📰 ${escHtml(news.source)}</span>
+        <span>🕐 ${news.time}</span>
+        ${news.hot ? '<span style="color: #dc2626;">🔥 热门</span>' : ''}
+      </div>
+      <div class="news-detail-body">
+        ${news.content.split('\n\n').map(p => `<p>${escHtml(p)}</p>`).join('')}
+      </div>
+    </div>
+  `;
+  
+  showModal('新闻详情', content, `
+    <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+  `);
 }
 
 // 编辑告示（管理员）
@@ -680,7 +984,37 @@ function formatRelativeTime(isoString) {
 
 // 格式化告示内容
 function formatBroadcast(content) {
-  return content.split('\n').map(line => line.trim() ? `<p>${escHtml(line)}</p>` : '').join('');
+  if (!content.trim()) return '<p class="empty-text">暂无公告</p>';
+  
+  const lines = content.split('\n').filter(line => line.trim());
+  const icons = ['📢', '📋', '✅', '⚠️', '💡', '🎯'];
+  
+  return lines.map((line, index) => {
+    const icon = icons[index % icons.length];
+    // 如果行中包含冒号，分割为标题和内容
+    const parts = line.split('：');
+    if (parts.length >= 2) {
+      const title = parts[0];
+      const desc = parts.slice(1).join('：');
+      return `
+        <div class="broadcast-item">
+          <div class="broadcast-item-icon">${icon}</div>
+          <div class="broadcast-item-content">
+            <div class="broadcast-item-title">${escHtml(title)}</div>
+            <div class="broadcast-item-desc">${escHtml(desc)}</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="broadcast-item">
+        <div class="broadcast-item-icon">${icon}</div>
+        <div class="broadcast-item-content">
+          <div class="broadcast-item-desc">${escHtml(line)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // 获取当前步骤名称
