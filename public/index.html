@@ -37,6 +37,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 .login-box h1 { font-size: 22px; text-align: center; margin-bottom: 8px; color: var(--primary); }
+.login-box .system-title { font-size: 28px; font-weight: bold; text-align: center; margin-bottom: 8px; background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .login-box p { text-align: center; color: var(--text-muted); margin-bottom: 28px; font-size: 14px; }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
@@ -163,7 +164,7 @@ tr:hover td { background: #f8fafc; }
 <!-- ===== 登录页 ===== -->
 <div id="loginPage">
   <div class="login-box">
-    <h1>📊 Excel 数据管理</h1>
+    <div class="system-title">🏢 ZY管理系统</div>
     <p>请使用账号登录系统</p>
     <div class="form-group">
       <label>用户名</label>
@@ -187,7 +188,7 @@ tr:hover td { background: #f8fafc; }
   <div class="layout">
     <!-- 侧边栏 -->
     <aside class="sidebar">
-      <div class="sidebar-brand">📊 <span>Excel管理系统</span></div>
+      <div class="sidebar-brand">🏢 <span>ZY管理系统</span></div>
       <nav class="sidebar-nav" id="sidebarNav">
         <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
           <span class="nav-icon">🏠</span><span>首页</span>
@@ -198,8 +199,14 @@ tr:hover td { background: #f8fafc; }
         <div class="nav-item" data-page="search" onclick="navigate('search')">
           <span class="nav-icon">🔍</span><span>数据查询</span>
         </div>
+        <div class="nav-item" data-page="materials" onclick="navigate('materials')">
+          <span class="nav-icon">📦</span><span>物资申报</span>
+        </div>
         <div class="nav-item admin-only" data-page="users" onclick="navigate('users')">
           <span class="nav-icon">👥</span><span>用户管理</span>
+        </div>
+        <div class="nav-item admin-only" data-page="departments" onclick="navigate('departments')">
+          <span class="nav-icon">🏢</span><span>部门管理</span>
         </div>
         <div class="nav-item admin-only" data-page="logs" onclick="navigate('logs')">
           <span class="nav-icon">📋</span><span>操作日志</span>
@@ -324,12 +331,12 @@ document.getElementById('loginPass').addEventListener('keydown', e => { if (e.ke
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
-  const titles = { dashboard:'首页', files:'文件管理', search:'数据查询', users:'用户管理', logs:'操作日志', password:'修改密码' };
+  const titles = { dashboard:'首页', files:'文件管理', search:'数据查询', materials:'物资申报', users:'用户管理', departments:'部门管理', logs:'操作日志', password:'修改密码' };
   document.getElementById('pageTitle').textContent = titles[page] || page;
   const content = document.getElementById('pageContent');
   content.innerHTML = '<div style="color:#94a3b8;padding:40px;text-align:center;">加载中...</div>';
 
-  const pages = { dashboard: renderDashboard, files: renderFiles, search: renderSearch, users: renderUsers, logs: renderLogs, password: renderPassword };
+  const pages = { dashboard: renderDashboard, files: renderFiles, search: renderSearch, materials: renderMaterials, users: renderUsers, departments: renderDepartments, logs: renderLogs, password: renderPassword };
   if (pages[page]) pages[page]();
 }
 
@@ -596,26 +603,55 @@ async function doSearch() {
 }
 
 // ===================== 用户管理 =====================
+let usersList = [];
+let departmentsData = [];
+
 async function renderUsers() {
   if (currentUser.role !== 'admin') return;
-  const users = await api('GET', '/api/users') || [];
+  
+  // 同时获取用户列表和部门列表
+  const [usersRes, deptsRes] = await Promise.all([
+    api('GET', '/api/users'),
+    api('GET', '/api/departments')
+  ]);
+  
+  usersList = usersRes || [];
+  departmentsData = deptsRes?.departments || [];
+  
   const el = document.getElementById('pageContent');
   el.innerHTML = `
     <div class="card">
       <div class="card-title">👥 用户管理
-        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showAddUser()">+ 添加用户</button>
+        <div style="float: right;">
+          <button class="btn btn-sm btn-secondary" onclick="downloadUserTemplate()">下载模板</button>
+          <button class="btn btn-sm btn-secondary" onclick="showImportUsers()">批量导入</button>
+          <button class="btn btn-sm btn-danger" onclick="showBatchDelete()">批量删除</button>
+          <button class="btn btn-primary btn-sm" onclick="showAddUser()">+ 添加用户</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead>
-          <tbody>
-            ${users.map(u => `
+          <thead>
             <tr>
+              <th><input type="checkbox" id="selectAllUsers" onclick="toggleSelectAllUsers()"></th>
+              <th>用户名</th>
+              <th>角色</th>
+              <th>部门</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersList.map(u => `
+            <tr>
+              <td><input type="checkbox" class="user-checkbox" value="${u.id}" ${u.id === currentUser.id ? 'disabled' : ''}></td>
               <td>${escHtml(u.username)}</td>
               <td><span class="badge badge-${u.role}">${u.role === 'admin' ? '管理员' : '普通用户'}</span></td>
+              <td>${escHtml(u.departmentName || '未分配')}</td>
               <td>${new Date(u.createdAt).toLocaleString('zh-CN')}</td>
               <td>
-                ${u.id !== currentUser.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">删除</button>` : '<span style="color:#94a3b8;font-size:13px">（当前用户）</span>'}
+                <button class="btn btn-xs btn-primary" onclick="editUser('${u.id}', '${escHtml(u.username)}', '${u.role}', '${u.departmentId || ''}')">编辑</button>
+                ${u.id !== currentUser.id ? `<button class="btn btn-xs btn-danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">删除</button>` : '<span style="color:#94a3b8;font-size:13px">（当前用户）</span>'}
               </td>
             </tr>`).join('')}
           </tbody>
@@ -624,7 +660,18 @@ async function renderUsers() {
     </div>`;
 }
 
+function toggleSelectAllUsers() {
+  const checked = document.getElementById('selectAllUsers').checked;
+  document.querySelectorAll('.user-checkbox:not([disabled])').forEach(cb => cb.checked = checked);
+}
+
+function getSelectedUserIds() {
+  return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
+}
+
 function showAddUser() {
+  const deptOptions = departmentsData.map(d => `<option value="${d.id}">${escHtml(d.name)}</option>`).join('');
+  
   showModal('添加用户', `
     <div class="form-group"><label>用户名</label><input type="text" id="nu_name" placeholder="用户名"></div>
     <div class="form-group"><label>密码（6~50位）</label><input type="password" id="nu_pass" placeholder="密码"></div>
@@ -632,6 +679,12 @@ function showAddUser() {
       <select id="nu_role" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
         <option value="user">普通用户</option>
         <option value="admin">管理员</option>
+      </select>
+    </div>
+    <div class="form-group"><label>部门</label>
+      <select id="nu_dept" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
+        <option value="">-- 请选择部门 --</option>
+        ${deptOptions}
       </select>
     </div>
     <div class="error-msg" id="nuError"></div>`,
@@ -644,11 +697,47 @@ async function doAddUser() {
   const username = document.getElementById('nu_name').value.trim();
   const password = document.getElementById('nu_pass').value;
   const role = document.getElementById('nu_role').value;
+  const departmentId = document.getElementById('nu_dept').value;
   document.getElementById('nuError').textContent = '';
   if (!username || !password) { document.getElementById('nuError').textContent = '请填写完整'; return; }
-  const res = await api('POST', '/api/users', { username, password, role });
+  const res = await api('POST', '/api/users', { username, password, role, departmentId });
   if (res && res.success) { toast('添加成功', 'success'); closeModal(); renderUsers(); }
   else document.getElementById('nuError').textContent = res?.error || '添加失败';
+}
+
+function editUser(id, username, role, departmentId) {
+  const deptOptions = departmentsData.map(d => 
+    `<option value="${d.id}" ${d.id === departmentId ? 'selected' : ''}>${escHtml(d.name)}</option>`
+  ).join('');
+  
+  showModal('编辑用户', `
+    <div class="form-group"><label>用户名</label><input type="text" value="${escHtml(username)}" disabled style="background: #f5f5f5;"></div>
+    <div class="form-group"><label>角色</label>
+      <select id="edit_role" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
+        <option value="user" ${role === 'user' ? 'selected' : ''}>普通用户</option>
+        <option value="admin" ${role === 'admin' ? 'selected' : ''}>管理员</option>
+      </select>
+    </div>
+    <div class="form-group"><label>部门</label>
+      <select id="edit_dept" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
+        <option value="">-- 请选择部门 --</option>
+        ${deptOptions}
+      </select>
+    </div>
+    <div class="error-msg" id="editError"></div>`,
+    `<button class="btn btn-primary btn-sm" onclick="doEditUser('${id}')">保存</button>
+     <button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>`
+  );
+}
+
+async function doEditUser(id) {
+  const role = document.getElementById('edit_role').value;
+  const departmentId = document.getElementById('edit_dept').value;
+  document.getElementById('editError').textContent = '';
+  
+  const res = await api('PUT', `/api/users/${id}`, { role, departmentId });
+  if (res && res.success) { toast('更新成功', 'success'); closeModal(); renderUsers(); }
+  else document.getElementById('editError').textContent = res?.error || '更新失败';
 }
 
 async function deleteUser(id, name) {
@@ -656,6 +745,66 @@ async function deleteUser(id, name) {
   const res = await api('DELETE', `/api/users/${id}`);
   if (res && res.success) { toast('删除成功', 'success'); renderUsers(); }
   else toast(res?.error || '删除失败', 'error');
+}
+
+function showBatchDelete() {
+  const ids = getSelectedUserIds();
+  if (ids.length === 0) { toast('请先选择要删除的用户', 'error'); return; }
+  if (!confirm(`确定删除选中的 ${ids.length} 个用户吗？`)) return;
+  
+  api('POST', '/api/users/batch-delete', { ids }).then(res => {
+    if (res && res.success) {
+      toast(`成功删除 ${res.deleted} 个用户`, 'success');
+      renderUsers();
+    } else {
+      toast(res?.error || '删除失败', 'error');
+    }
+  });
+}
+
+function showImportUsers() {
+  showModal('批量导入用户', `
+    <div class="form-group">
+      <label>选择 Excel 文件</label>
+      <input type="file" id="importFile" accept=".xlsx,.xls">
+      <p style="color: #666; font-size: 12px; margin-top: 8px;">
+        Excel 需包含：用户名、密码、角色（可选）、部门（可选）<br>
+        建议先下载模板查看格式
+      </p>
+    </div>
+    <div id="importError" style="color: #dc2626; margin-top: 10px;"></div>`,
+    `<button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>
+     <button class="btn btn-primary btn-sm" onclick="doImportUsers()">导入</button>`
+  );
+}
+
+async function doImportUsers() {
+  const fileInput = document.getElementById('importFile');
+  if (!fileInput.files[0]) {
+    document.getElementById('importError').textContent = '请选择文件';
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  
+  const res = await fetch('/api/users/import', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  
+  if (data.success) {
+    closeModal();
+    toast(`导入成功 ${data.imported} 个用户${data.failed > 0 ? '，失败 ' + data.failed + ' 个' : ''}`, data.failed > 0 ? 'warning' : 'success');
+    renderUsers();
+  } else {
+    document.getElementById('importError').textContent = data.error || '导入失败';
+  }
+}
+
+function downloadUserTemplate() {
+  window.location.href = '/api/users/template';
 }
 
 // ===================== 日志 =====================
@@ -766,6 +915,376 @@ function toast(msg, type = '') {
 // ===================== Utils =====================
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================== 物资申报模块 =====================
+let materialsList = [];
+let departmentsList = [];
+
+async function renderMaterials() {
+  const el = document.getElementById('pageContent');
+  
+  // 获取物资清单和额度信息
+  const [materialsRes, quotaRes] = await Promise.all([
+    api('GET', '/api/materials/list'),
+    api('GET', '/api/materials/quota')
+  ]);
+  
+  materialsList = materialsRes?.materials || [];
+  const quota = quotaRes || { quota: 0, used: 0, remaining: 0, departmentName: '' };
+  
+  let html = `
+    <div class="card">
+      <div class="card-title">📦 物资申报`;
+  
+  if (currentUser?.role === 'admin') {
+    html += ` <button class="btn btn-sm btn-primary" onclick="showUploadMaterials()">上传物资清单</button>`;
+  }
+  
+  html += `</div>`;
+  
+  // 显示额度信息（普通用户）
+  if (currentUser?.role === 'user') {
+    html += `
+      <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0;">
+        <strong>💰 部门额度信息</strong><br>
+        部门：${quota.departmentName || '未分配'} | 
+        总额度：<span style="color: #0ea5e9; font-weight: bold;">¥${(quota.quota || 0).toFixed(2)}</span> | 
+        已用：<span style="color: #f59e0b;">¥${(quota.used || 0).toFixed(2)}</span> | 
+        剩余：<span style="color: ${quota.remaining < 1000 ? '#ef4444' : '#10b981'}; font-weight: bold;">¥${(quota.remaining || 0).toFixed(2)}</span>
+      </div>`;
+  }
+  
+  // 申领表单
+  html += `
+      <div class="form-group">
+        <label>选择物资</label>
+        <select id="materialSelect" class="form-control" onchange="onMaterialChange()">
+          <option value="">-- 请选择物资 --</option>
+          ${materialsList.map(m => `<option value="${m.id}" data-price="${m.price}" data-spec="${escHtml(m.spec)}">${escHtml(m.name)} - ¥${m.price.toFixed(2)}${m.spec ? ' / ' + escHtml(m.spec) : ''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>规格</label>
+        <input type="text" id="materialSpec" readonly style="background: #f5f5f5;">
+      </div>
+      <div class="form-group">
+        <label>单价</label>
+        <input type="text" id="materialPrice" readonly style="background: #f5f5f5;">
+      </div>
+      <div class="form-group">
+        <label>数量</label>
+        <input type="number" id="materialQty" min="1" value="1" onchange="calculateTotal()">
+      </div>
+      <div class="form-group">
+        <label>总金额</label>
+        <input type="text" id="materialTotal" readonly style="background: #e8f5e9; font-weight: bold; color: #2e7d32;">
+      </div>
+      <div class="form-group">
+        <label>备注（可选）</label>
+        <input type="text" id="materialRemark" placeholder="请输入备注">
+      </div>
+      <button class="btn btn-primary" onclick="submitApplication()">提交申领</button>
+    </div>`;
+  
+  // 申领记录
+  html += await renderApplicationsList();
+  
+  el.innerHTML = html;
+}
+
+function onMaterialChange() {
+  const select = document.getElementById('materialSelect');
+  const option = select.options[select.selectedIndex];
+  if (!option.value) {
+    document.getElementById('materialSpec').value = '';
+    document.getElementById('materialPrice').value = '';
+    document.getElementById('materialTotal').value = '';
+    return;
+  }
+  document.getElementById('materialSpec').value = option.dataset.spec || '';
+  document.getElementById('materialPrice').value = '¥' + parseFloat(option.dataset.price).toFixed(2);
+  calculateTotal();
+}
+
+function calculateTotal() {
+  const select = document.getElementById('materialSelect');
+  const option = select.options[select.selectedIndex];
+  const price = parseFloat(option.dataset.price) || 0;
+  const qty = parseInt(document.getElementById('materialQty').value) || 0;
+  const total = price * qty;
+  document.getElementById('materialTotal').value = '¥' + total.toFixed(2);
+}
+
+async function submitApplication() {
+  const materialId = document.getElementById('materialSelect').value;
+  const quantity = document.getElementById('materialQty').value;
+  const remark = document.getElementById('materialRemark').value;
+  
+  if (!materialId) { toast('请选择物资', 'error'); return; }
+  if (!quantity || quantity < 1) { toast('请输入有效数量', 'error'); return; }
+  
+  const res = await api('POST', '/api/materials/apply', { materialId, quantity, remark });
+  if (res && res.success) {
+    toast('申领提交成功', 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '提交失败', 'error');
+  }
+}
+
+async function renderApplicationsList() {
+  const res = await api('GET', '/api/materials/my-applications');
+  const apps = res?.applications || [];
+  
+  if (apps.length === 0) {
+    return '<div class="card" style="margin-top: 20px;"><div class="card-title">📋 申领记录</div><p style="color: #999; padding: 20px;">暂无申领记录</p></div>';
+  }
+  
+  let html = `
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-title">📋 申领记录（${apps.length} 条）</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>物资</th>
+              <th>规格</th>
+              <th>单价</th>
+              <th>数量</th>
+              <th>金额</th>
+              <th>状态</th>
+              ${currentUser?.role === 'admin' ? '<th>申请人</th><th>部门</th><th>操作</th>' : '<th>备注</th>'}
+            </tr>
+          </thead>
+          <tbody>`;
+  
+  apps.forEach(app => {
+    const statusClass = app.status === 'approved' ? 'badge-success' : app.status === 'rejected' ? 'badge-danger' : 'badge-warning';
+    const statusText = app.status === 'approved' ? '已通过' : app.status === 'rejected' ? '已拒绝' : '待审批';
+    
+    html += `<tr ${app.isReadOnly ? 'style="background: #f9f9f9;"' : ''}>
+      <td>${new Date(app.createdAt).toLocaleDateString('zh-CN')}</td>
+      <td>${escHtml(app.materialName)}</td>
+      <td>${escHtml(app.materialSpec || '-')}</td>
+      <td>¥${(app.materialPrice || 0).toFixed(2)}</td>
+      <td>${app.quantity}</td>
+      <td style="font-weight: bold; color: #2e7d32;">¥${(app.totalAmount || 0).toFixed(2)}</td>
+      <td><span class="badge ${statusClass}">${statusText}</span></td>`;
+    
+    if (currentUser?.role === 'admin') {
+      html += `<td>${escHtml(app.username)}</td>
+        <td>${escHtml(app.departmentName)}</td>
+        <td>
+          ${app.status === 'pending' ? `
+            <button class="btn btn-xs btn-success" onclick="updateAppStatus('${app.id}', 'approved')">通过</button>
+            <button class="btn btn-xs btn-danger" onclick="updateAppStatus('${app.id}', 'rejected')">拒绝</button>
+          ` : '-'}
+          <button class="btn btn-xs btn-secondary" onclick="deleteApplication('${app.id}')">删除</button>
+        </td>`;
+    } else {
+      html += `<td>${escHtml(app.remark || '-')}</td>`;
+    }
+    
+    html += '</tr>';
+  });
+  
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+async function updateAppStatus(id, status) {
+  const res = await api('PUT', `/api/materials/applications/${id}`, { status });
+  if (res && res.success) {
+    toast('状态更新成功', 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '更新失败', 'error');
+  }
+}
+
+async function deleteApplication(id) {
+  if (!confirm('确定删除这条申领记录吗？')) return;
+  const res = await api('DELETE', `/api/materials/applications/${id}`);
+  if (res && res.success) {
+    toast('删除成功', 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '删除失败', 'error');
+  }
+}
+
+function showUploadMaterials() {
+  const html = `
+    <div class="form-group">
+      <label>选择物资清单 Excel 文件</label>
+      <input type="file" id="materialsFile" accept=".xlsx,.xls">
+      <p style="color: #666; font-size: 12px; margin-top: 8px;">Excel 需包含：物品名、单价、规格 列</p>
+    </div>
+    <div id="uploadError" style="color: #dc2626; margin-top: 10px;"></div>`;
+  
+  showModal('上传物资清单', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doUploadMaterials()">上传</button>
+  `);
+}
+
+async function doUploadMaterials() {
+  const fileInput = document.getElementById('materialsFile');
+  if (!fileInput.files[0]) {
+    document.getElementById('uploadError').textContent = '请选择文件';
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  
+  const res = await fetch('/api/materials/upload', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  
+  if (data.success) {
+    closeModal();
+    toast(`成功导入 ${data.count} 条物资`, 'success');
+    renderMaterials();
+  } else {
+    document.getElementById('uploadError').textContent = data.error || '上传失败';
+  }
+}
+
+// ===================== 部门管理（管理员） =====================
+async function renderDepartments() {
+  const res = await api('GET', '/api/departments');
+  const depts = res?.departments || [];
+  
+  // 获取统计信息
+  const statsRes = await api('GET', '/api/materials/statistics');
+  const stats = statsRes?.statistics || [];
+  const statsMap = new Map(stats.map(s => [s.departmentId, s]));
+  
+  let html = `
+    <div class="card">
+      <div class="card-title">🏢 部门管理
+        <button class="btn btn-sm btn-primary" style="float: right;" onclick="showAddDepartment()">+ 新增部门</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>部门名称</th>
+              <th>月度额度</th>
+              <th>本月已用</th>
+              <th>剩余额度</th>
+              <th>申领次数</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>`;
+  
+  depts.forEach(dept => {
+    const stat = statsMap.get(dept.id) || { used: 0, remaining: dept.quota || 0, applicationCount: 0 };
+    html += `<tr>
+      <td>${escHtml(dept.name)}</td>
+      <td>¥${(dept.quota || 0).toFixed(2)}</td>
+      <td style="color: #f59e0b;">¥${(stat.used || 0).toFixed(2)}</td>
+      <td style="color: ${stat.remaining < 1000 ? '#ef4444' : '#10b981'}; font-weight: bold;">¥${(stat.remaining || 0).toFixed(2)}</td>
+      <td>${stat.applicationCount || 0}</td>
+      <td>
+        <button class="btn btn-xs btn-primary" onclick="editDepartment('${dept.id}', '${escHtml(dept.name)}', ${dept.quota || 0})">编辑</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteDepartment('${dept.id}')">删除</button>
+      </td>
+    </tr>`;
+  });
+  
+  html += `</tbody></table></div>`;
+  
+  if (depts.length === 0) {
+    html += '<p style="color: #999; padding: 20px;">暂无部门，请点击"新增部门"创建</p>';
+  }
+  
+  html += '</div>';
+  document.getElementById('pageContent').innerHTML = html;
+}
+
+function showAddDepartment() {
+  const html = `
+    <div class="form-group">
+      <label>部门名称</label>
+      <input type="text" id="deptName" placeholder="如：技术部">
+    </div>
+    <div class="form-group">
+      <label>月度额度（元）</label>
+      <input type="number" id="deptQuota" value="10000" min="0" step="100">
+    </div>`;
+  
+  showModal('新增部门', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doAddDepartment()">保存</button>
+  `);
+}
+
+async function doAddDepartment() {
+  const name = document.getElementById('deptName').value.trim();
+  const quota = document.getElementById('deptQuota').value;
+  
+  if (!name) { toast('请输入部门名称', 'error'); return; }
+  
+  const res = await api('POST', '/api/departments', { name, quota });
+  if (res && res.success) {
+    closeModal();
+    toast('部门创建成功', 'success');
+    renderDepartments();
+  } else {
+    toast(res?.error || '创建失败', 'error');
+  }
+}
+
+function editDepartment(id, name, quota) {
+  const html = `
+    <div class="form-group">
+      <label>部门名称</label>
+      <input type="text" id="editDeptName" value="${escHtml(name)}">
+    </div>
+    <div class="form-group">
+      <label>月度额度（元）</label>
+      <input type="number" id="editDeptQuota" value="${quota}" min="0" step="100">
+    </div>`;
+  
+  showModal('编辑部门', html, `
+    <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <button class="btn btn-primary" onclick="doEditDepartment('${id}')">保存</button>
+  `);
+}
+
+async function doEditDepartment(id) {
+  const name = document.getElementById('editDeptName').value.trim();
+  const quota = document.getElementById('editDeptQuota').value;
+  
+  if (!name) { toast('请输入部门名称', 'error'); return; }
+  
+  const res = await api('PUT', `/api/departments/${id}`, { name, quota });
+  if (res && res.success) {
+    closeModal();
+    toast('部门更新成功', 'success');
+    renderDepartments();
+  } else {
+    toast(res?.error || '更新失败', 'error');
+  }
+}
+
+async function deleteDepartment(id) {
+  if (!confirm('确定删除该部门吗？部门下的用户需先转移到其他部门。')) return;
+  
+  const res = await api('DELETE', `/api/departments/${id}`);
+  if (res && res.success) {
+    toast('部门删除成功', 'success');
+    renderDepartments();
+  } else {
+    toast(res?.error || '删除失败', 'error');
+  }
 }
 
 // ===================== 启动 =====================

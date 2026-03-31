@@ -34,7 +34,7 @@ function getUserById(id) {
   return getUsers().find(u => u.id === id);
 }
 
-function createUser(username, password, role = 'user') {
+function createUser(username, password, role = 'user', departmentId = null) {
   const db = readDB();
   const hash = bcrypt.hashSync(password, 10);
   const user = {
@@ -42,6 +42,7 @@ function createUser(username, password, role = 'user') {
     username,
     password: hash,
     role,
+    departmentId,
     createdAt: new Date().toISOString(),
     loginAttempts: 0,
     lockedUntil: null,
@@ -77,4 +78,8 @@ function ensureAdmin() {
   }
 }
 
-module.exports = { getUsers, getUserByUsername, getUserById, createUser, updateUser, deleteUser, ensureAdmin };
+function getUsersByDepartment(departmentId) {
+  return getUsers().filter(u => u.departmentId === departmentId);
+}
+
+module.exports = { getUsers, getUserByUsername, getUserById, createUser, updateUser, deleteUser, ensureAdmin, getUsersByDepartment };

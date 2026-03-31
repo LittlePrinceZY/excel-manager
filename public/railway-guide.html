@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway 部署指南 - 第三步</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .step-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-title {
+            font-size: 1.4em;
+            color: #333;
+        }
+        .step-desc {
+            color: #666;
+            margin-top: 5px;
+        }
+        .browser-mockup {
+            background: #1a1a2e;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .browser-header {
+            background: #16213e;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .browser-dot.red { background: #ff5f56; }
+        .browser-dot.yellow { background: #ffbd2e; }
+        .browser-dot.green { background: #27c93f; }
+        .browser-url {
+            background: #0f3460;
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: #aaa;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+        .browser-content {
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 200px;
+        }
+        .railway-nav {
+            background: #0f0f1a;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .railway-logo {
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .railway-nav-item {
+            color: #888;
+            font-size: 0.9em;
+        }
+        .railway-nav-item.active {
+            color: #fff;
+        }
+        .railway-content {
+            background: #1a1a2e;
+            padding: 30px;
+        }
+        .railway-card {
+            background: #252538;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .railway-card.highlight {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+        .railway-card-title {
+            color: white;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        .railway-card-desc {
+            color: #888;
+            font-size: 0.9em;
+        }
+        .railway-card-icon {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+            margin-bottom: 12px;
+        }
+        .railway-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        .tip-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        .tip-box.warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .tip-box.success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        .tip-box strong {
+            color: #333;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        .checklist li.checked:before {
+            content: "☑";
+        }
+        .domain-box {
+            background: #f5f5f5;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #667eea;
+            margin: 15px 0;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #666;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-badge.deploying {
+            background: #cce5ff;
+            color: #004085;
+        }
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .step-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Railway 部署指南</h1>
+            <p>第三步：部署到公网（图文教程）</p>
+        </div>
+
+        <!-- 步骤 1: 登录 Railway -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div>
+                    <div class="step-title">登录 Railway</div>
+                    <div class="step-desc">使用 GitHub 账号一键登录</div>
+                </div>
+            </div>
+
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot red"></div>
+                    <div class="browser-dot yellow"></div>
+                    <div class="browser-dot green"></div>
+                    <div class="browser-url">railway.app</div>
+                </div>
+                <div class="browser-content" style="padding: 0;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 60px 40px; text-align: center;">
+                        <h2 style="color: white; font-size: 2.5em; margin-bottom: 20px;">Railway</h2>
+                        <p style="color: rgba(255,255,255,0.8); font-size: 1.2em; margin-bottom: 40px;">Bring your code, we'll handle the rest</p>
+                        <div style="background: white; color: #333; padding: 15px 40px; border-radius: 8px; display: inline-block; font-weight: bold; cursor: pointer;">
+                            👋 Start for Free
+                        </div>
+                        <p style="color: rgba(255,255,255,0.6); margin-top: 20px; font-size: 0.9em;">Continue with GitHub →</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 操作提示：</strong><br>
+                1. 打开 <a href="https://railway.app" target="_blank" style="color: #2196f3;">railway.app</a><br>
+                2. 点击 "Start for Free" 或 "Login"<br>
+                3. 选择 "Continue with GitHub" 登录
+            </div>
+        </div>
+
+        <!-- 步骤 2: 创建项目 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div>
+                    <div class="step-title">创建新项目</div>
+                    <div class="step-desc">从 GitHub 仓库部署</div>
+                </div>
+            </div>
+
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot red"></div>
+                    <div class="browser-dot yellow"></div>
+                    <div class="browser-dot green"></div>
+                    <div class="browser-url">railway.app/dashboard</div>
+                </div>
+                <div class="browser-content" style="padding: 0;">
+                    <div class="railway-nav">
+                        <div class="railway-logo">🚂 Railway</div>
+                        <div class="railway-nav-item">Projects</div>
+                        <div class="railway-nav-item active">Dashboard</div>
+                    </div>
+                    <div class="railway-content">
+                        <h3 style="color: white; margin-bottom: 20px;">Create a New Project</h3>
+                        
+                        <div class="railway-card highlight">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="railway-card-icon">📦</div>
+                                <div>
+                                    <div class="railway-card-title">Deploy from GitHub repo</div>
+                                    <div class="railway-card-desc">Connect your GitHub repository to deploy automatically</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="railway-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="railway-card-icon" style="background: #555;">📝</div>
+                                <div>
+                                    <div class="railway-card-title">Deploy from template</div>
+                                    <div class="railway-card-desc">Start with a pre-configured template</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="railway-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="railway-card-icon" style="background: #555;">📁</div>
+                                <div>
+                                    <div class="railway-card-title">Empty project</div>
+                                    <div class="railway-card-desc">Start from scratch</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 操作提示：</strong><br>
+                1. 登录后点击 "New Project"<br>
+                2. 选择 "<strong>Deploy from GitHub repo</strong>"（高亮那个）
+            </div>
+        </div>
+
+        <!-- 步骤 3: 选择仓库 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div>
+                    <div class="step-title">选择你的仓库</div>
+                    <div class="step-desc">找到 excel-manager 仓库</div>
+                </div>
+            </div>
+
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot red"></div>
+                    <div class="browser-dot yellow"></div>
+                    <div class="browser-dot green"></div>
+                    <div class="browser-url">railway.app/new/github</div>
+                </div>
+                <div class="browser-content" style="padding: 0;">
+                    <div class="railway-nav">
+                        <div class="railway-logo">🚂 Railway</div>
+                    </div>
+                    <div class="railway-content">
+                        <h3 style="color: white; margin-bottom: 20px;">Select Repository</h3>
+                        
+                        <div style="background: #0f0f1a; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                            <input type="text" placeholder="Search repositories..." style="width: 100%; background: #252538; border: none; padding: 10px; border-radius: 6px; color: white;">
+                        </div>
+
+                        <div class="railway-card highlight">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 1.5em;">📁</span>
+                                    <div>
+                                        <div class="railway-card-title">LittlePrinceZY/excel-manager</div>
+                                        <div class="railway-card-desc">Node.js project • Updated 2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="railway-btn">Select</div>
+                            </div>
+                        </div>
+
+                        <div class="railway-card">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 1.5em;">📁</span>
+                                <div>
+                                    <div class="railway-card-title">LittlePrinceZY/other-project</div>
+                                    <div class="railway-card-desc">Python project • Updated 5 days ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 操作提示：</strong><br>
+                1. 在列表中找到 <code>LittlePrinceZY/excel-manager</code><br>
+                2. 点击 "<strong>Select</strong>" 按钮<br>
+                3. 如果没有看到仓库，点击 "Configure GitHub App" 授权
+            </div>
+        </div>
+
+        <!-- 步骤 4: 等待部署 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <div>
+                    <div class="step-title">等待自动部署</div>
+                    <div class="step-desc">Railway 会自动构建和部署</div>
+                </div>
+            </div>
+
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot red"></div>
+                    <div class="browser-dot yellow"></div>
+                    <div class="browser-dot green"></div>
+                    <div class="browser-url">railway.app/project/xxx</div>
+                </div>
+                <div class="browser-content" style="padding: 0;">
+                    <div class="railway-nav">
+                        <div class="railway-logo">🚂 Railway</div>
+                        <div class="railway-nav-item active">Deployments</div>
+                        <div class="railway-nav-item">Variables</div>
+                        <div class="railway-nav-item">Settings</div>
+                    </div>
+                    <div class="railway-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="color: white;">excel-manager</h3>
+                            <span class="status-badge deploying" style="background: #cce5ff; color: #004085;">🔄 Deploying</span>
+                        </div>
+                        
+                        <div class="railway-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span style="font-size: 1.5em;">🟢</span>
+                                <div style="flex: 1;">
+                                    <div class="railway-card-title">Building</div>
+                                    <div class="railway-card-desc">npm install • 45s</div>
+                                </div>
+                                <span style="color: #4caf50;">✓ Done</span>
+                            </div>
+                        </div>
+
+                        <div class="railway-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span style="font-size: 1.5em;">🟡</span>
+                                <div style="flex: 1;">
+                                    <div class="railway-card-title">Starting</div>
+                                    <div class="railway-card-desc">node server.js</div>
+                                </div>
+                                <span style="color: #ff9800;">⏳ In Progress</span>
+                            </div>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 15px; border-radius: 8px; margin-top: 20px; font-family: monospace; font-size: 0.9em;">
+                            <div style="color: #4caf50;">✓ Installing dependencies...</div>
+                            <div style="color: #4caf50;">✓ Building project...</div>
+                            <div style="color: #ff9800;">→ Starting application...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip-box warning">
+                <strong>⏱️ 部署时间：</strong><br>
+                通常需要 <strong>2-5 分钟</strong>，请耐心等待。<br>
+                看到绿色 ✓ 表示部署成功！
+            </div>
+        </div>
+
+        <!-- 步骤 5: 获取访问地址 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">5</div>
+                <div>
+                    <div class="step-title">获取公网访问地址</div>
+                    <div class="step-desc">找到你的专属域名</div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('tab1')">方法 A：Deployments 页面</div>
+                <div class="tab" onclick="switchTab('tab2')">方法 B：Settings 页面</div>
+            </div>
+
+            <div id="tab1" class="tab-content active">
+                <div class="browser-mockup">
+                    <div class="browser-header">
+                        <div class="browser-dot red"></div>
+                        <div class="browser-dot yellow"></div>
+                        <div class="browser-dot green"></div>
+                        <div class="browser-url">railway.app/project/xxx</div>
+                    </div>
+                    <div class="browser-content" style="padding: 0;">
+                        <div class="railway-nav">
+                            <div class="railway-logo">🚂 Railway</div>
+                            <div class="railway-nav-item active">Deployments</div>
+                            <div class="railway-nav-item">Variables</div>
+                            <div class="railway-nav-item">Settings</div>
+                        </div>
+                        <div class="railway-content">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="color: white;">excel-manager</h3>
+                                <span class="status-badge success">✅ Success</span>
+                            </div>
+
+                            <div class="railway-card" style="border-color: #4caf50;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <span style="font-size: 1.5em;">🌐</span>
+                                    <div style="flex: 1;">
+                                        <div class="railway-card-title">Public Domain</div>
+                                        <div style="background: #0f0f1a; padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; color: #4caf50;">
+                                            https://excel-manager-production-xxx.up.railway.app
+                                        </div>
+                                    </div>
+                                    <div class="railway-btn">Open</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px; padding: 15px; background: #0f3460; border-radius: 8px;">
+                                <div style="color: white; margin-bottom: 10px;">📊 Deployment Details</div>
+                                <div style="color: #888; font-size: 0.9em;">
+                                    Branch: main<br>
+                                    Commit: Initial commit<br>
+                                    Deployed: 2 minutes ago
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box success">
+                    <strong>✅ 找到域名了！</strong><br>
+                    在 Deployments 页面，部署成功后可以看到绿色的 "Public Domain" 卡片，点击 "Open" 即可访问。
+                </div>
+            </div>
+
+            <div id="tab2" class="tab-content">
+                <div class="browser-mockup">
+                    <div class="browser-header">
+                        <div class="browser-dot red"></div>
+                        <div class="browser-dot yellow"></div>
+                        <div class="browser-dot green"></div>
+                        <div class="browser-url">railway.app/project/xxx/settings</div>
+                    </div>
+                    <div class="browser-content" style="padding: 0;">
+                        <div class="railway-nav">
+                            <div class="railway-logo">🚂 Railway</div>
+                            <div class="railway-nav-item">Deployments</div>
+                            <div class="railway-nav-item">Variables</div>
+                            <div class="railway-nav-item active">Settings</div>
+                        </div>
+                        <div class="railway-content">
+                            <h3 style="color: white; margin-bottom: 20px;">Settings</h3>
+
+                            <div class="railway-card">
+                                <div class="railway-card-title">🌐 Public Networking</div>
+                                <div class="railway-card-desc" style="margin-top: 10px;">
+                                    <div style="background: #0f0f1a; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                                        <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">Generated Domain</div>
+                                        <div style="color: #4caf50; font-family: monospace;">
+                                            excel-manager-production-xxx.up.railway.app
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="railway-card">
+                                <div class="railway-card-title">⚙️ Service Settings</div>
+                                <div class="railway-card-desc">Root directory • Build command • Start command</div>
+                            </div>
+
+                            <div class="railway-card">
+                                <div class="railway-card-title">🗑️ Danger Zone</div>
+                                <div class="railway-card-desc" style="color: #ff5f56;">Delete service</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 备选方法：</strong><br>
+                    如果 Deployments 页面找不到，点击顶部 "Settings"，在 "Public Networking" 部分也能看到域名。
+                </div>
+            </div>
+        </div>
+
+        <!-- 最终步骤 -->
+        <div class="step-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="step-header" style="border-bottom-color: rgba(255,255,255,0.2);">
+                <div class="step-number" style="background: white; color: #667eea;">✓</div>
+                <div>
+                    <div class="step-title" style="color: white;">部署完成！</div>
+                    <div class="step-desc" style="color: rgba(255,255,255,0.8);">你的系统已上线</div>
+                </div>
+            </div>
+
+            <div class="domain-box" style="background: rgba(255,255,255,0.1); border-color: white; color: white;">
+                https://excel-manager-production-xxx.up.railway.app
+            </div>
+
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-top: 20px;">
+                <h4 style="margin-bottom: 15px;">🎉 现在你可以：</h4>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 8px 0;">✅ 把上面的地址发给任何人访问</li>
+                    <li style="padding: 8px 0;">✅ 用 Admin / 123456 登录系统</li>
+                    <li style="padding: 8px 0;">✅ 上传 Excel 文件并管理数据</li>
+                </ul>
+            </div>
+
+            <div class="tip-box warning" style="background: rgba(255,255,255,0.95); margin-top: 20px;">
+                <strong>⚠️ 重要提醒：</strong><br>
+                登录后请立即修改默认密码！<br>
+                默认账号：Admin / 123456
+            </div>
+        </div>
+
+        <!-- 核对清单 -->
+        <div class="step-card">
+            <h3 style="margin-bottom: 20px;">📋 部署核对清单</h3>
+            <ul class="checklist">
+                <li>访问 railway.app 并登录</li>
+                <li>点击 "New Project"</li>
+                <li>选择 "Deploy from GitHub repo"</li>
+                <li>选择 LittlePrinceZY/excel-manager 仓库</li>
+                <li>等待部署完成（看到绿色 ✓）</li>
+                <li>找到 Public Domain 地址</li>
+                <li>点击 Open 访问系统</li>
+                <li>用 Admin/123456 登录</li>
+                <li>修改默认密码</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+    </script>
+</body>
+</html>

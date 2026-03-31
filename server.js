@@ -35,6 +35,8 @@ const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const excelRouter = require('./routes/excel');
 const logsRouter = require('./routes/logs');
+const materialsRouter = require('./routes/materials');
+const departmentsRouter = require('./routes/departments');
 
 // 中间件
 app.use(express.json({ limit: '50mb' }));
@@ -59,6 +61,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/excel', excelRouter);
 app.use('/api/logs', logsRouter);
+app.use('/api/materials', materialsRouter);
+app.use('/api/departments', departmentsRouter);
 
 // SPA 回退
 app.get('*', (req, res) => {
@@ -70,5 +74,5 @@ require('./utils/migrate')();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Excel管理系统已启动: http://localhost:${PORT}`);
+  console.log(`✅ ZY管理系统已启动: http://localhost:${PORT}`);
 });
