@@ -2,7 +2,7 @@
  * 审批流程路由
  */
 const router = require('express').Router();
-const { requireAuth, requireAdmin } = require('../utils/middleware');
+const { requireLogin, requireAdmin } = require('../utils/middleware');
 const { addOpLog } = require('../utils/logger');
 const {
   getWorkflows, getWorkflowById, createWorkflow, updateWorkflow, deleteWorkflow,
@@ -16,13 +16,13 @@ const { getDepartments } = require('../utils/materials');
 // ========== 审批流程定义（管理员） ==========
 
 // 获取所有流程
-router.get('/definitions', requireAuth, (req, res) => {
+router.get('/definitions', requireLogin, (req, res) => {
   const workflows = getWorkflows();
   res.json(workflows);
 });
 
 // 获取单个流程
-router.get('/definitions/:id', requireAuth, (req, res) => {
+router.get('/definitions/:id', requireLogin, (req, res) => {
   const workflow = getWorkflowById(req.params.id);
   if (!workflow) return res.status(404).json({ error: '流程不存在' });
   res.json(workflow);
@@ -103,7 +103,7 @@ router.delete('/definitions/:id', requireAdmin, (req, res) => {
 });
 
 // 获取可选审批人列表
-router.get('/approvers', requireAuth, (req, res) => {
+router.get('/approvers', requireLogin, (req, res) => {
   const users = getUsers().map(u => ({
     id: u.id,
     username: u.username,
@@ -128,19 +128,19 @@ router.get('/approvers', requireAuth, (req, res) => {
 // ========== 审批实例（普通用户） ==========
 
 // 获取我的申请
-router.get('/my-applications', requireAuth, (req, res) => {
+router.get('/my-applications', requireLogin, (req, res) => {
   const instances = getInstancesByUser(req.session.userId);
   res.json(instances);
 });
 
 // 获取待我审批
-router.get('/pending-approvals', requireAuth, (req, res) => {
+router.get('/pending-approvals', requireLogin, (req, res) => {
   const instances = getPendingInstancesForApprover(req.session.userId);
   res.json(instances);
 });
 
 // 获取我已审批
-router.get('/my-approved', requireAuth, (req, res) => {
+router.get('/my-approved', requireLogin, (req, res) => {
   const instances = getApprovedInstancesByUser(req.session.userId);
   res.json(instances);
 });
@@ -152,7 +152,7 @@ router.get('/instances', requireAdmin, (req, res) => {
 });
 
 // 创建申请
-router.post('/applications', requireAuth, (req, res) => {
+router.post('/applications', requireLogin, (req, res) => {
   try {
     const { workflowId, title, content, formData } = req.body;
     
@@ -187,7 +187,7 @@ router.post('/applications', requireAuth, (req, res) => {
 });
 
 // 审批通过
-router.post('/instances/:id/approve', requireAuth, (req, res) => {
+router.post('/instances/:id/approve', requireLogin, (req, res) => {
   try {
     const { comment } = req.body;
     const instance = approveInstance(
@@ -212,7 +212,7 @@ router.post('/instances/:id/approve', requireAuth, (req, res) => {
 });
 
 // 审批拒绝
-router.post('/instances/:id/reject', requireAuth, (req, res) => {
+router.post('/instances/:id/reject', requireLogin, (req, res) => {
   try {
     const { comment } = req.body;
     const instance = rejectInstance(
@@ -237,7 +237,7 @@ router.post('/instances/:id/reject', requireAuth, (req, res) => {
 });
 
 // 撤回申请
-router.post('/instances/:id/withdraw', requireAuth, (req, res) => {
+router.post('/instances/:id/withdraw', requireLogin, (req, res) => {
   try {
     const instance = withdrawInstance(req.params.id, req.session.userId);
     if (!instance) return res.status(404).json({ error: '申请不存在' });
