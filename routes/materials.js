@@ -345,6 +345,34 @@ router.delete('/applications/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// 用户撤销自己的申领申请（仅未审批状态的可以撤销）
+router.delete('/my-applications/:id', requireLogin, (req, res) => {
+  const { id } = req.params;
+  const app = getApplications().find(a => a.id === id);
+  
+  if (!app) return res.status(404).json({ error: '申领记录不存在' });
+  
+  // 只能撤销自己的申请
+  if (app.userId !== req.session.userId) {
+    return res.status(403).json({ error: '无权撤销他人的申领申请' });
+  }
+  
+  // 只能撤销未审批的
+  if (app.status !== 'pending') {
+    return res.status(400).json({ error: '只能撤销未审批的申请' });
+  }
+  
+  deleteApplication(id);
+  
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'cancel-application', 
+    detail: `撤销申领: ${app.materialName}` 
+  });
+  
+  res.json({ success: true });
+});
+
 // 按部门统计
 router.get('/statistics', requireAdmin, (req, res) => {
   const { month } = req.query;
