@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 数据管理系统</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ===== LOGIN ===== */
+#loginPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+}
+.login-box {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-box h1 { font-size: 22px; text-align: center; margin-bottom: 8px; color: var(--primary); }
+.login-box p { text-align: center; color: var(--text-muted); margin-bottom: 28px; font-size: 14px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.form-group input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
+.form-group input:focus { border-color: var(--primary); }
+.remember-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+.btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-sm { width: auto; padding: 6px 14px; font-size: 13px; }
+.btn-secondary { background: #e2e8f0; color: var(--text); }
+.btn-secondary:hover { background: #cbd5e1; }
+.error-msg { color: var(--danger); font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px; }
+
+/* ===== APP LAYOUT ===== */
+#appPage { display: none; }
+.layout { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  background: #1e293b;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-brand { padding: 20px 16px 16px; font-size: 16px; font-weight: 700; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 18px; font-size: 14px; cursor: pointer; border-radius: 0; transition: background .15s; color: #94a3b8; }
+.nav-item:hover { background: #334155; color: white; }
+.nav-item.active { background: var(--primary); color: white; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-user { padding: 14px 16px; border-top: 1px solid #334155; font-size: 13px; color: #94a3b8; }
+.sidebar-user strong { display: block; color: white; }
+
+/* Main */
+.main { margin-left: var(--sidebar-w); flex: 1; }
+.topbar { background: white; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
+.topbar h2 { font-size: 18px; font-weight: 700; }
+.content { padding: 28px; }
+
+/* ===== CARDS ===== */
+.card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+/* ===== TABLE ===== */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { background: #f8fafc; font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8fafc; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-admin { background: #dbeafe; color: #1d4ed8; }
+.badge-user { background: #f0fdf4; color: #16a34a; }
+.badge-success { background: #f0fdf4; color: #16a34a; }
+.badge-fail { background: #fef2f2; color: #dc2626; }
+
+/* ===== SEARCH BAR ===== */
+.search-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.search-bar input, .search-bar select { padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+.search-bar input:focus, .search-bar select:focus { border-color: var(--primary); }
+.search-bar input { flex: 1; min-width: 200px; }
+
+/* ===== FILE LIST ===== */
+.file-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 16px; margin-bottom: 12px; background: white; transition: box-shadow .15s; }
+.file-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.file-icon { font-size: 32px; flex-shrink: 0; }
+.file-info { flex: 1; }
+.file-name { font-weight: 600; font-size: 15px; }
+.file-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.file-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+/* ===== DATA TABLE (editable) ===== */
+.data-table-wrap { position: relative; }
+#dataTabBtns { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+.tab-btn { padding: 8px 18px; border: none; background: transparent; font-size: 14px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.edit-cell { background: #fffbeb !important; }
+
+/* ===== MODAL ===== */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; border-radius: 14px; padding: 28px; min-width: 360px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.modal h3 { font-size: 18px; margin-bottom: 16px; }
+.modal .form-group { margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* ===== STATS ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.stat-number { font-size: 32px; font-weight: 700; color: var(--primary); }
+.stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+/* ===== UPLOAD AREA ===== */
+.upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+.upload-area:hover, .upload-area.drag { border-color: var(--primary); background: #eff6ff; }
+.upload-area p { color: var(--text-muted); font-size: 14px; margin-top: 10px; }
+
+/* ===== TOAST ===== */
+#toast { position: fixed; bottom: 28px; right: 28px; z-index: 9999; }
+.toast-item { background: #1e293b; color: white; padding: 12px 20px; border-radius: 10px; margin-top: 8px; font-size: 14px; animation: slideIn .2s ease; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.toast-item.success { background: var(--success); }
+.toast-item.error { background: var(--danger); }
+@keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .sidebar { width: 60px; }
+  .nav-item span { display: none; }
+  .sidebar-brand span { display: none; }
+  .sidebar-user strong, .sidebar-user small { display: none; }
+  .main { margin-left: 60px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 登录页 ===== -->
+<div id="loginPage">
+  <div class="login-box">
+    <h1>📊 Excel 数据管理</h1>
+    <p>请使用账号登录系统</p>
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="loginUser" placeholder="请输入用户名" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="loginPass" placeholder="请输入密码" autocomplete="current-password">
+    </div>
+    <div class="remember-row">
+      <input type="checkbox" id="rememberMe">
+      <label for="rememberMe">记住我（7天免登录）</label>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">登 录</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ===== 主应用 ===== -->
+<div id="appPage">
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">📊 <span>Excel管理系统</span></div>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon">🏠</span><span>首页</span>
+        </div>
+        <div class="nav-item" data-page="files" onclick="navigate('files')">
+          <span class="nav-icon">📁</span><span>文件管理</span>
+        </div>
+        <div class="nav-item" data-page="search" onclick="navigate('search')">
+          <span class="nav-icon">🔍</span><span>数据查询</span>
+        </div>
+        <div class="nav-item admin-only" data-page="users" onclick="navigate('users')">
+          <span class="nav-icon">👥</span><span>用户管理</span>
+        </div>
+        <div class="nav-item admin-only" data-page="logs" onclick="navigate('logs')">
+          <span class="nav-icon">📋</span><span>操作日志</span>
+        </div>
+        <div class="nav-item" data-page="password" onclick="navigate('password')">
+          <span class="nav-icon">🔑</span><span>修改密码</span>
+        </div>
+      </nav>
+      <div class="sidebar-user">
+        <strong id="sidebarUsername">-</strong>
+        <small id="sidebarRole">-</small>
+        <br>
+        <button class="btn btn-sm btn-secondary" style="margin-top:8px;width:100%;" onclick="doLogout()">退出登录</button>
+      </div>
+    </aside>
+
+    <!-- 主区域 -->
+    <div class="main">
+      <div class="topbar">
+        <h2 id="pageTitle">首页</h2>
+      </div>
+      <div class="content" id="pageContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 模态框 ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <h3 id="modalTitle">对话框</h3>
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ===================== 全局状态 =====================
+let currentUser = null;
+let currentPage = 'dashboard';
+let fileCache = {};  // fileId -> {sheets}
+let editingFile = null;
+let editingSheetName = null;
+
+// ===================== API =====================
+async function api(method, url, data, isFile = false) {
+  const opts = {
+    method,
+    credentials: 'include',
+    headers: isFile ? {} : { 'Content-Type': 'application/json' },
+    body: data ? (isFile ? data : JSON.stringify(data)) : undefined,
+  };
+  const res = await fetch(url, opts);
+  if (res.status === 401) { showLogin(); return null; }
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  return { _raw: res, _status: res.status };
+}
+
+// ===================== 认证 =====================
+async function checkAuth() {
+  const me = await api('GET', '/api/auth/me');
+  if (me && me.id) {
+    currentUser = me;
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('appPage').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display = 'block';
+  document.getElementById('sidebarUsername').textContent = currentUser.username;
+  document.getElementById('sidebarRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+  // 管理员功能
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = currentUser.role === 'admin' ? 'flex' : 'none';
+  });
+  navigate('dashboard');
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const rememberMe = document.getElementById('rememberMe').checked;
+  document.getElementById('loginError').textContent = '';
+  if (!username || !password) { document.getElementById('loginError').textContent = '请输入用户名和密码'; return; }
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, rememberMe }),
+    credentials: 'include',
+  });
+  const data = await res.json();
+  if (data.success) {
+    currentUser = data.user;
+    showApp();
+  } else {
+    document.getElementById('loginError').textContent = data.error || '登录失败';
+  }
+}
+
+async function doLogout() {
+  await api('POST', '/api/auth/logout');
+  currentUser = null;
+  showLogin();
+}
+
+// 回车登录
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ===================== 导航 =====================
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  const titles = { dashboard:'首页', files:'文件管理', search:'数据查询', users:'用户管理', logs:'操作日志', password:'修改密码' };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '<div style="color:#94a3b8;padding:40px;text-align:center;">加载中...</div>';
+
+  const pages = { dashboard: renderDashboard, files: renderFiles, search: renderSearch, users: renderUsers, logs: renderLogs, password: renderPassword };
+  if (pages[page]) pages[page]();
+}
+
+// ===================== 首页 =====================
+async function renderDashboard() {
+  const [files, users] = await Promise.all([
+    api('GET', '/api/excel/files'),
+    currentUser.role === 'admin' ? api('GET', '/api/users') : Promise.resolve([]),
+  ]);
+  const f = files || [];
+  const u = users || [];
+  const el = document.getElementById('pageContent');
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-number">${f.length}</div><div class="stat-label">Excel 文件</div></div>
+      ${currentUser.role === 'admin' ? `<div class="stat-card"><div class="stat-number">${u.length}</div><div class="stat-label">系统用户</div></div>` : ''}
+      <div class="stat-card"><div class="stat-number">${currentUser.role === 'admin' ? '管理员' : '普通用户'}</div><div class="stat-label">当前角色</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📁 最近上传文件</div>
+      ${f.length === 0 ? '<p style="color:#94a3b8;text-align:center;padding:20px 0;">暂无文件</p>' : f.slice(0,5).map(renderFileItem).join('')}
+      ${f.length > 0 ? `<div style="text-align:center;margin-top:12px"><button class="btn btn-sm btn-secondary" onclick="navigate('files')">查看全部文件</button></div>` : ''}
+    </div>`;
+}
+
+// ===================== 文件管理 =====================
+async function renderFiles() {
+  const files = await api('GET', '/api/excel/files') || [];
+  const el = document.getElementById('pageContent');
+  let uploadHtml = '';
+  if (currentUser.role === 'admin') {
+    uploadHtml = `
+    <div class="card">
+      <div class="card-title">📤 上传 Excel 文件</div>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <div style="font-size:40px">📊</div>
+        <p>点击或拖拽 .xlsx / .xls 文件到此处上传</p>
+        <p style="font-size:12px;margin-top:4px">最大 50MB</p>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+    </div>`;
+  }
+  el.innerHTML = uploadHtml + `
+    <div class="card">
+      <div class="card-title">📁 文件列表 <span style="font-size:13px;color:#94a3b8;">(共 ${files.length} 个)</span></div>
+      <div id="fileListContainer">
+        ${files.length === 0 ? '<p style="color:#94a3b8;text-align:center;padding:20px 0;">暂无文件，请先上传</p>' : files.map(renderFileItem).join('')}
+      </div>
+    </div>`;
+}
+
+function renderFileItem(f) {
+  const size = f.size > 1024*1024 ? (f.size/1024/1024).toFixed(1)+'MB' : (f.size/1024).toFixed(0)+'KB';
+  const date = new Date(f.uploadedAt).toLocaleString('zh-CN');
+  const adminBtns = currentUser.role === 'admin' ? `
+    <button class="btn btn-sm btn-secondary" onclick="renameFile('${f.id}','${escHtml(f.displayName)}')">重命名</button>
+    <button class="btn btn-sm btn-danger" onclick="deleteFile('${f.id}','${escHtml(f.displayName)}')">删除</button>
+  ` : '';
+  return `
+  <div class="file-card" id="fc-${f.id}">
+    <div class="file-icon">📊</div>
+    <div class="file-info">
+      <div class="file-name">${escHtml(f.displayName)}</div>
+      <div class="file-meta">上传者: ${escHtml(f.uploadedBy)} · ${date} · ${size}</div>
+    </div>
+    <div class="file-actions">
+      <button class="btn btn-sm btn-primary" onclick="viewFile('${f.id}')">查看</button>
+      ${currentUser.role === 'admin' ? `<button class="btn btn-sm btn-secondary" onclick="editFile('${f.id}')">编辑</button>` : ''}
+      <button class="btn btn-sm btn-secondary" onclick="exportFile('${f.id}','xlsx')">导出xlsx</button>
+      <button class="btn btn-sm btn-secondary" onclick="exportFile('${f.id}','csv')">导出csv</button>
+      ${adminBtns}
+    </div>
+  </div>`;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+}
+
+function handleFileSelect(input) {
+  if (input.files[0]) uploadFile(input.files[0]);
+}
+
+async function uploadFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls'].includes(ext)) { toast('只支持 .xlsx / .xls 文件', 'error'); return; }
+
+  const displayName = prompt('请输入文件显示名称（留空则使用原文件名）:', file.name.replace(/\.[^.]+$/,''));
+  if (displayName === null) return;
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('displayName', displayName || file.name);
+
+  toast('上传中...');
+  const res = await api('POST', '/api/excel/upload', fd, true);
+  if (res && res.success) {
+    toast('上传成功', 'success');
+    renderFiles();
+  } else {
+    toast(res?.error || '上传失败', 'error');
+  }
+}
+
+async function deleteFile(id, name) {
+  if (!confirm(`确定删除文件「${name}」？此操作不可撤销！`)) return;
+  const res = await api('DELETE', `/api/excel/${id}`);
+  if (res && res.success) { toast('删除成功', 'success'); renderFiles(); }
+  else toast(res?.error || '删除失败', 'error');
+}
+
+async function renameFile(id, oldName) {
+  const newName = prompt('请输入新名称:', oldName);
+  if (!newName || newName.trim() === oldName) return;
+  const res = await api('PATCH', `/api/excel/rename/${id}`, { displayName: newName.trim() });
+  if (res && res.success) { toast('重命名成功', 'success'); renderFiles(); }
+  else toast(res?.error || '重命名失败', 'error');
+}
+
+function exportFile(id, format) {
+  window.open(`/api/excel/export/${id}?format=${format}`, '_blank');
+}
+
+// ===================== 查看/编辑文件 =====================
+async function viewFile(id) {
+  const data = await api('GET', `/api/excel/data/${id}`);
+  if (!data || !data.sheets) { toast('加载失败', 'error'); return; }
+  fileCache[id] = data;
+  showDataModal(id, data, false);
+}
+
+async function editFile(id) {
+  const data = await api('GET', `/api/excel/data/${id}`);
+  if (!data || !data.sheets) { toast('加载失败', 'error'); return; }
+  fileCache[id] = JSON.parse(JSON.stringify(data)); // deep copy
+  editingFile = id;
+  showDataModal(id, data, true);
+}
+
+function showDataModal(id, data, editable) {
+  const sheetNames = Object.keys(data.sheets);
+  if (!sheetNames.length) { toast('文件无数据', 'error'); return; }
+
+  editingSheetName = sheetNames[0];
+
+  const tabHtml = sheetNames.map((s,i) =>
+    `<button class="tab-btn ${i===0?'active':''}" onclick="switchSheet('${id}',this,'${escHtml(s)}','${editable}')">${escHtml(s)}</button>`
+  ).join('');
+
+  const body = `
+    <div id="dataTabBtns">${tabHtml}</div>
+    <div id="sheetTableWrap" style="margin-top:12px;max-height:60vh;overflow:auto;">
+      ${buildSheetTable(data.sheets[sheetNames[0]], editable)}
+    </div>`;
+
+  const actions = [
+    editable ? `<button class="btn btn-primary btn-sm" onclick="saveFileEdit('${id}')">💾 保存</button>` : '',
+    `<button class="btn btn-secondary btn-sm" onclick="closeModal()">关闭</button>`,
+  ].filter(Boolean).join('');
+
+  showModal(data.fileName + (editable ? ' [编辑模式]' : ''), body, actions);
+}
+
+function switchSheet(id, btn, sheetName, editable) {
+  editingSheetName = sheetName;
+  document.querySelectorAll('#dataTabBtns .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const data = fileCache[id];
+  document.getElementById('sheetTableWrap').innerHTML = buildSheetTable(data.sheets[sheetName], editable === 'true');
+}
+
+function buildSheetTable(rows, editable) {
+  if (!rows || !rows.length) return '<p style="color:#94a3b8;padding:20px;text-align:center;">此工作表无数据</p>';
+  const headers = Object.keys(rows[0]);
+  const ths = headers.map(h => `<th>${escHtml(String(h))}</th>`).join('');
+  const trs = rows.map((row, ri) => {
+    const tds = headers.map((h, ci) => {
+      const v = row[h] ?? '';
+      if (editable) {
+        return `<td><input type="text" value="${escHtml(String(v))}" class="edit-cell" style="border:none;background:transparent;width:100%;min-width:80px;font-size:13px;padding:2px 4px;"
+          onchange="updateCell(${ri},'${escHtml(h)}',this.value)"></td>`;
+      }
+      return `<td>${escHtml(String(v))}</td>`;
+    }).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('');
+
+  let addRowBtn = editable ? `
+    <div style="padding:10px 0">
+      <button class="btn btn-sm btn-secondary" onclick="addRow()">+ 添加行</button>
+    </div>` : '';
+
+  return `<div class="table-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>${addRowBtn}`;
+}
+
+function updateCell(rowIdx, header, value) {
+  if (!editingFile || !editingSheetName) return;
+  const data = fileCache[editingFile];
+  if (data && data.sheets[editingSheetName]) {
+    data.sheets[editingSheetName][rowIdx][header] = value;
+  }
+}
+
+function addRow() {
+  if (!editingFile || !editingSheetName) return;
+  const data = fileCache[editingFile];
+  const rows = data.sheets[editingSheetName];
+  if (!rows.length) return;
+  const emptyRow = {};
+  Object.keys(rows[0]).forEach(k => emptyRow[k] = '');
+  rows.push(emptyRow);
+  document.getElementById('sheetTableWrap').innerHTML = buildSheetTable(rows, true);
+}
+
+async function saveFileEdit(id) {
+  const data = fileCache[id];
+  const res = await api('PUT', `/api/excel/data/${id}`, { sheets: data.sheets });
+  if (res && res.success) { toast('保存成功', 'success'); closeModal(); }
+  else toast(res?.error || '保存失败', 'error');
+}
+
+// ===================== 搜索 =====================
+async function renderSearch() {
+  const files = await api('GET', '/api/excel/files') || [];
+  const el = document.getElementById('pageContent');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">🔍 数据查询</div>
+      <div class="search-bar">
+        <input type="text" id="searchKeyword" placeholder="输入关键词搜索..." onkeydown="if(event.key==='Enter')doSearch()">
+        <select id="searchFile">
+          <option value="">全部文件</option>
+          ${files.map(f => `<option value="${f.id}">${escHtml(f.displayName)}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="doSearch()">搜索</button>
+      </div>
+      <div id="searchResults"></div>
+    </div>`;
+}
+
+async function doSearch() {
+  const kw = document.getElementById('searchKeyword').value.trim();
+  const fileId = document.getElementById('searchFile').value;
+  if (!kw) { toast('请输入关键词', 'error'); return; }
+  document.getElementById('searchResults').innerHTML = '<p style="color:#94a3b8;">搜索中...</p>';
+  const res = await api('GET', `/api/excel/search?keyword=${encodeURIComponent(kw)}${fileId?'&fileId='+fileId:''}`);
+  if (!res) return;
+  const el = document.getElementById('searchResults');
+  if (!res.results || !res.results.length) {
+    el.innerHTML = '<p style="color:#94a3b8;padding:20px;text-align:center;">未找到匹配结果</p>'; return;
+  }
+  const rows = res.results.map(r => {
+    const cells = Object.entries(r.row).map(([k,v]) => `<td><b>${escHtml(String(k))}</b>: ${escHtml(String(v))}</td>`).join('');
+    return `<tr><td><span class="badge badge-success">${escHtml(r.fileName)}</span> / ${escHtml(r.sheet)}</td>${cells}</tr>`;
+  }).join('');
+  el.innerHTML = `<p style="color:#64748b;margin-bottom:10px">共找到 <b>${res.total}</b> 条结果</p>
+    <div class="table-wrap"><table><tbody>${rows}</tbody></table></div>`;
+}
+
+// ===================== 用户管理 =====================
+async function renderUsers() {
+  if (currentUser.role !== 'admin') return;
+  const users = await api('GET', '/api/users') || [];
+  const el = document.getElementById('pageContent');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">👥 用户管理
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showAddUser()">+ 添加用户</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody>
+            ${users.map(u => `
+            <tr>
+              <td>${escHtml(u.username)}</td>
+              <td><span class="badge badge-${u.role}">${u.role === 'admin' ? '管理员' : '普通用户'}</span></td>
+              <td>${new Date(u.createdAt).toLocaleString('zh-CN')}</td>
+              <td>
+                ${u.id !== currentUser.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${escHtml(u.username)}')">删除</button>` : '<span style="color:#94a3b8;font-size:13px">（当前用户）</span>'}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function showAddUser() {
+  showModal('添加用户', `
+    <div class="form-group"><label>用户名</label><input type="text" id="nu_name" placeholder="用户名"></div>
+    <div class="form-group"><label>密码（6~50位）</label><input type="password" id="nu_pass" placeholder="密码"></div>
+    <div class="form-group"><label>角色</label>
+      <select id="nu_role" style="width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;">
+        <option value="user">普通用户</option>
+        <option value="admin">管理员</option>
+      </select>
+    </div>
+    <div class="error-msg" id="nuError"></div>`,
+    `<button class="btn btn-primary btn-sm" onclick="doAddUser()">确定添加</button>
+     <button class="btn btn-secondary btn-sm" onclick="closeModal()">取消</button>`
+  );
+}
+
+async function doAddUser() {
+  const username = document.getElementById('nu_name').value.trim();
+  const password = document.getElementById('nu_pass').value;
+  const role = document.getElementById('nu_role').value;
+  document.getElementById('nuError').textContent = '';
+  if (!username || !password) { document.getElementById('nuError').textContent = '请填写完整'; return; }
+  const res = await api('POST', '/api/users', { username, password, role });
+  if (res && res.success) { toast('添加成功', 'success'); closeModal(); renderUsers(); }
+  else document.getElementById('nuError').textContent = res?.error || '添加失败';
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`确定删除用户「${name}」？`)) return;
+  const res = await api('DELETE', `/api/users/${id}`);
+  if (res && res.success) { toast('删除成功', 'success'); renderUsers(); }
+  else toast(res?.error || '删除失败', 'error');
+}
+
+// ===================== 日志 =====================
+async function renderLogs() {
+  if (currentUser.role !== 'admin') return;
+  const el = document.getElementById('pageContent');
+  el.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn btn-primary btn-sm" onclick="showLoginLogs()">登录日志</button>
+      <button class="btn btn-secondary btn-sm" onclick="showOpLogs()">操作日志</button>
+    </div>
+    <div id="logContent"><p style="color:#94a3b8;text-align:center;padding:40px">请选择日志类型</p></div>`;
+}
+
+async function showLoginLogs() {
+  const logs = await api('GET', '/api/logs/login') || [];
+  document.getElementById('logContent').innerHTML = `
+    <div class="card" style="margin:0">
+      <div class="card-title">🔐 登录日志（最近 ${logs.length} 条）</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>时间</th><th>用户名</th><th>IP</th><th>结果</th><th>原因</th></tr></thead>
+        <tbody>${logs.map(l => `<tr>
+          <td style="white-space:nowrap">${new Date(l.time).toLocaleString('zh-CN')}</td>
+          <td>${escHtml(l.username)}</td>
+          <td>${escHtml(l.ip)}</td>
+          <td><span class="badge badge-${l.result === 'success' ? 'success' : 'fail'}">${l.result === 'success' ? '成功' : '失败'}</span></td>
+          <td>${escHtml(l.reason||'')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+async function showOpLogs() {
+  const logs = await api('GET', '/api/logs/operations') || [];
+  document.getElementById('logContent').innerHTML = `
+    <div class="card" style="margin:0">
+      <div class="card-title">📋 操作日志（最近 ${logs.length} 条）</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>时间</th><th>用户名</th><th>操作</th><th>详情</th></tr></thead>
+        <tbody>${logs.map(l => `<tr>
+          <td style="white-space:nowrap">${new Date(l.time).toLocaleString('zh-CN')}</td>
+          <td>${escHtml(l.username)}</td>
+          <td><span class="badge badge-admin">${escHtml(l.action)}</span></td>
+          <td>${escHtml(l.detail||'')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+// ===================== 修改密码 =====================
+function renderPassword() {
+  const el = document.getElementById('pageContent');
+  el.innerHTML = `
+    <div class="card" style="max-width:440px">
+      <div class="card-title">🔑 修改密码</div>
+      <div class="form-group"><label>当前密码</label><input type="password" id="pw_old" placeholder="请输入当前密码"></div>
+      <div class="form-group"><label>新密码（6~50位）</label><input type="password" id="pw_new" placeholder="请输入新密码"></div>
+      <div class="form-group"><label>确认新密码</label><input type="password" id="pw_confirm" placeholder="请再次输入新密码"></div>
+      <div class="error-msg" id="pwError"></div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="doChangePass()">确认修改</button>
+    </div>`;
+}
+
+async function doChangePass() {
+  const old = document.getElementById('pw_old').value;
+  const nw = document.getElementById('pw_new').value;
+  const confirm = document.getElementById('pw_confirm').value;
+  document.getElementById('pwError').textContent = '';
+  if (!old || !nw || !confirm) { document.getElementById('pwError').textContent = '请填写所有字段'; return; }
+  if (nw !== confirm) { document.getElementById('pwError').textContent = '两次输入的密码不一致'; return; }
+  if (nw.length < 6) { document.getElementById('pwError').textContent = '密码至少6位'; return; }
+
+  const res = await api('POST', '/api/auth/change-password', { oldPassword: old, newPassword: nw });
+  if (res && res.success) {
+    toast('密码修改成功，请重新登录', 'success');
+    setTimeout(() => { currentUser = null; showLogin(); }, 1500);
+  } else {
+    document.getElementById('pwError').textContent = res?.error || '修改失败';
+  }
+}
+
+// ===================== Modal =====================
+function showModal(title, body, actions) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalActions').innerHTML = actions;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ===================== Toast =====================
+function toast(msg, type = '') {
+  const container = document.getElementById('toast');
+  const div = document.createElement('div');
+  div.className = 'toast-item ' + type;
+  div.textContent = msg;
+  container.appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// ===================== Utils =====================
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================== 启动 =====================
+checkAuth();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "sessions": {
+    "1cff2799cf0f41bbbd384711c70fa9b3": [
+      {
+        "expertId": "SoftwareArchitect",
+        "name": "Yara",
+        "profession": "软件架构师",
+        "avatarUrl": "https://acc-1258344699.cos.accelerate.myqcloud.com/workbuddy/experts/avatars/02-Engineering/SoftwareArchitect/SoftwareArchitect.png",
+        "promptUrl": "https://acc-1258344699.cos.accelerate.myqcloud.com/workbuddy/experts/experts/02-Engineering/SoftwareArchitect/SoftwareArchitect_zh.md",
+        "usedAt": 1774917438638,
+        "industryId": "02-Engineering"
+      }
+    ]
+  },
+  "lastUpdated": 1774917503663
+}
