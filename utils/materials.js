@@ -10,6 +10,7 @@ const APPLICATIONS_FILE = path.join(__dirname, '..', 'data', 'applications.json'
 const DEPTS_FILE = path.join(__dirname, '..', 'data', 'departments.json');
 const QUOTAS_FILE = path.join(__dirname, '..', 'data', 'quotas.json');
 const BROADCAST_FILE = path.join(__dirname, '..', 'data', 'broadcast.json');
+const SETTINGS_FILE = path.join(__dirname, '..', 'data', 'materials_settings.json');
 
 // ========== 部门管理 ==========
 function readDepts() {
@@ -277,6 +278,34 @@ function setBroadcast(content, updatedBy) {
   return data;
 }
 
+// ========== 物资申领开关设置 ==========
+function readSettings() {
+  if (!fs.existsSync(SETTINGS_FILE)) return { enabled: true, updatedAt: null, updatedBy: null };
+  try {
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+  } catch {
+    return { enabled: true, updatedAt: null, updatedBy: null };
+  }
+}
+
+function writeSettings(data) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function getMaterialsEnabled() {
+  return readSettings();
+}
+
+function setMaterialsEnabled(enabled, updatedBy) {
+  const data = {
+    enabled: !!enabled,
+    updatedAt: new Date().toISOString(),
+    updatedBy: updatedBy || 'admin'
+  };
+  writeSettings(data);
+  return data;
+}
+
 module.exports = {
   // 部门
   getDepartments,
@@ -306,4 +335,7 @@ module.exports = {
   // 广播
   getBroadcast,
   setBroadcast,
+  // 开关设置
+  getMaterialsEnabled,
+  setMaterialsEnabled,
 };

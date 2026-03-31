@@ -9,7 +9,8 @@ const {
   getApplications, getApplicationsByUser, getApplicationsByDepartment,
   createApplication, updateApplication, deleteApplication,
   getDepartments, getDepartmentById, getDepartmentRemainingQuota,
-  getDepartmentUsedQuota, getBroadcast, setBroadcast
+  getDepartmentUsedQuota, getBroadcast, setBroadcast,
+  getMaterialsEnabled, setMaterialsEnabled
 } = require('../utils/materials');
 const { getUserById } = require('../utils/db');
 const { addOpLog } = require('../utils/logger');
@@ -50,6 +51,24 @@ router.get('/list', requireLogin, (req, res) => {
 router.get('/broadcast', requireLogin, (req, res) => {
   const broadcast = getBroadcast();
   res.json({ success: true, broadcast });
+});
+
+// 获取物资申领开关状态
+router.get('/settings', requireLogin, (req, res) => {
+  const settings = getMaterialsEnabled();
+  res.json({ success: true, settings });
+});
+
+// 设置物资申领开关（管理员）
+router.post('/settings', requireAdmin, (req, res) => {
+  const { enabled } = req.body;
+  const settings = setMaterialsEnabled(enabled, req.session.username);
+  addOpLog({ 
+    username: req.session.username, 
+    action: 'update-materials-settings', 
+    detail: `设置物资申领开关: ${enabled ? '开启' : '关闭'}` 
+  });
+  res.json({ success: true, settings });
 });
 
 // 设置广播内容（管理员）
@@ -203,10 +222,20 @@ router.get('/quota', requireLogin, (req, res) => {
 
 // 创建申领（普通用户）
 router.post('/apply', requireLogin, (req, res) => {
-  const { materialId, quantity, remark } = req.body;
+  const { materialId, quantity, remark, applicantName } = req.body;
+  
+  // 检查物资申领是否开启
+  const settings = getMaterialsEnabled();
+  if (!settings.enabled) {
+    return res.status(403).json({ error: '物资申领功能已关闭，暂无法提交申请' });
+  }
   
   if (!materialId || !quantity || quantity <= 0) {
     return res.status(400).json({ error: '请选择物资并输入有效数量' });
+  }
+  
+  if (!applicantName || applicantName.trim().length === 0) {
+    return res.status(400).json({ error: '请填写申领人' });
   }
   
   const user = getUserById(req.session.userId);
@@ -238,6 +267,7 @@ router.post('/apply', requireLogin, (req, res) => {
     materialPrice: material.price,
     quantity: parseInt(quantity),
     totalAmount,
+    applicantName: applicantName.trim(),
     remark: remark || '',
     month,
   });
@@ -245,7 +275,7 @@ router.post('/apply', requireLogin, (req, res) => {
   addOpLog({ 
     username: req.session.username, 
     action: 'apply-material', 
-    detail: `申领物资: ${material.name} x${quantity}, 金额: ¥${totalAmount.toFixed(2)}` 
+    detail: `申领物资: ${material.name} x${quantity}, 申领人: ${applicantName.trim()}, 金额: ¥${totalAmount.toFixed(2)}` 
   });
   
   res.json({ success: true, application });

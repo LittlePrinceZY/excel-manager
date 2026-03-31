@@ -1295,16 +1295,18 @@ let departmentsList = [];
 async function renderMaterials() {
   const el = document.getElementById('pageContent');
   
-  // 获取物资清单、额度信息和广播
-  const [materialsRes, quotaRes, broadcastRes] = await Promise.all([
+  // 获取物资清单、额度信息、广播和开关状态
+  const [materialsRes, quotaRes, broadcastRes, settingsRes] = await Promise.all([
     api('GET', '/api/materials/list'),
     api('GET', '/api/materials/quota'),
-    api('GET', '/api/materials/broadcast')
+    api('GET', '/api/materials/broadcast'),
+    api('GET', '/api/materials/settings')
   ]);
   
   materialsList = materialsRes?.materials || [];
   const quota = quotaRes || { quota: 0, used: 0, remaining: 0, departmentName: '' };
   const broadcast = broadcastRes?.broadcast || {};
+  const settings = settingsRes?.settings || { enabled: true };
   
   let html = '';
   
@@ -1330,6 +1332,7 @@ async function renderMaterials() {
             <button class="btn btn-sm btn-primary" onclick="showAddMaterial()">+ 添加物资</button>
             <button class="btn btn-sm btn-secondary" onclick="showUploadMaterials()">上传Excel</button>
             <button class="btn btn-sm btn-secondary" onclick="showManageMaterials()">管理物资</button>
+            <button class="btn btn-sm ${settings.enabled ? 'btn-success' : 'btn-danger'}" onclick="toggleMaterialsEnabled(${settings.enabled})">${settings.enabled ? '🔓 申领开启' : '🔒 申领关闭'}</button>
           ` : ''}
         </div>
       </div>`;
@@ -1346,10 +1349,22 @@ async function renderMaterials() {
       </div>`;
   }
   
-  // 申领表单
-  html += `
+  // 申领表单（根据开关状态显示）
+  if (!settings.enabled && currentUser?.role !== 'admin') {
+    // 关闭状态下普通用户看到提示
+    html += `
+      <div style="background: #fef2f2; border: 1px solid #ef4444; border-radius: 8px; padding: 20px; text-align: center; margin-top: 20px;">
+        <div style="font-size: 48px; margin-bottom: 10px;">🔒</div>
+        <div style="color: #dc2626; font-size: 18px; font-weight: bold;">物资申领功能已关闭</div>
+        <div style="color: #7f1d1d; margin-top: 8px;">当前无法提交新的申领申请，请稍后再试或联系管理员</div>
+      </div>
+    </div>`;
+  } else {
+    // 开启状态或管理员看到表单
+    html += `
+      ${!settings.enabled ? '<div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 15px; margin-bottom: 15px; color: #dc2626; font-weight: bold;">⚠️ 当前物资申领功能已关闭，普通用户无法提交申请</div>' : ''}
       <div class="form-group">
-        <label>选择物资</label>
+        <label>选择物资 <span style="color: #ef4444;">*</span></label>
         <select id="materialSelect" class="form-control" onchange="onMaterialChange()">
           <option value="">-- 请选择物资 --</option>
           ${materialsList.map(m => `<option value="${m.id}" data-price="${m.price}" data-spec="${escHtml(m.spec)}">${escHtml(m.name)} - ¥${m.price.toFixed(2)}${m.spec ? ' / ' + escHtml(m.spec) : ''}</option>`).join('')}
@@ -1364,7 +1379,7 @@ async function renderMaterials() {
         <input type="text" id="materialPrice" readonly style="background: #f5f5f5;">
       </div>
       <div class="form-group">
-        <label>数量</label>
+        <label>数量 <span style="color: #ef4444;">*</span></label>
         <input type="number" id="materialQty" min="1" value="1" onchange="calculateTotal()">
       </div>
       <div class="form-group">
@@ -1372,11 +1387,16 @@ async function renderMaterials() {
         <input type="text" id="materialTotal" readonly style="background: #e8f5e9; font-weight: bold; color: #2e7d32;">
       </div>
       <div class="form-group">
+        <label>申领人 <span style="color: #ef4444;">*</span></label>
+        <input type="text" id="applicantName" placeholder="请输入申领人姓名">
+      </div>
+      <div class="form-group">
         <label>备注（可选）</label>
         <input type="text" id="materialRemark" placeholder="请输入备注">
       </div>
       <button class="btn btn-primary" onclick="submitApplication()">提交申领</button>
     </div>`;
+  }
   
   // 申领记录
   html += await renderApplicationsList();
@@ -1410,12 +1430,14 @@ function calculateTotal() {
 async function submitApplication() {
   const materialId = document.getElementById('materialSelect').value;
   const quantity = document.getElementById('materialQty').value;
+  const applicantName = document.getElementById('applicantName').value;
   const remark = document.getElementById('materialRemark').value;
   
   if (!materialId) { toast('请选择物资', 'error'); return; }
   if (!quantity || quantity < 1) { toast('请输入有效数量', 'error'); return; }
+  if (!applicantName || applicantName.trim().length === 0) { toast('请填写申领人', 'error'); return; }
   
-  const res = await api('POST', '/api/materials/apply', { materialId, quantity, remark });
+  const res = await api('POST', '/api/materials/apply', { materialId, quantity, applicantName: applicantName.trim(), remark });
   if (res && res.success) {
     toast('申领提交成功', 'success');
     renderMaterials();
@@ -1446,7 +1468,7 @@ async function renderApplicationsList() {
               <th>数量</th>
               <th>金额</th>
               <th>状态</th>
-              ${currentUser?.role === 'admin' ? '<th>申请人</th><th>部门</th><th>操作</th>' : '<th>备注</th>'}
+              ${currentUser?.role === 'admin' ? '<th>申领人</th><th>申请人账号</th><th>部门</th><th>操作</th>' : '<th>申领人</th><th>备注</th>'}
             </tr>
           </thead>
           <tbody>`;
@@ -1465,7 +1487,8 @@ async function renderApplicationsList() {
       <td><span class="badge ${statusClass}">${statusText}</span></td>`;
     
     if (currentUser?.role === 'admin') {
-      html += `<td>${escHtml(app.username)}</td>
+      html += `<td>${escHtml(app.applicantName || app.username || '-')}</td>
+        <td>${escHtml(app.username)}</td>
         <td>${escHtml(app.departmentName)}</td>
         <td>
           ${app.status === 'pending' ? `
@@ -1475,7 +1498,8 @@ async function renderApplicationsList() {
           <button class="btn btn-xs btn-secondary" onclick="deleteApplication('${app.id}')">删除</button>
         </td>`;
     } else {
-      html += `<td>${escHtml(app.remark || '-')}</td>`;
+      html += `<td>${escHtml(app.applicantName || app.username || '-')}</td>
+        <td>${escHtml(app.remark || '-')}</td>`;
     }
     
     html += '</tr>';
@@ -1503,6 +1527,21 @@ async function deleteApplication(id) {
     renderMaterials();
   } else {
     toast(res?.error || '删除失败', 'error');
+  }
+}
+
+// 切换物资申领开关
+async function toggleMaterialsEnabled(currentState) {
+  const newState = !currentState;
+  const actionText = newState ? '开启' : '关闭';
+  if (!confirm(`确定要${actionText}物资申领功能吗？${newState ? '' : '关闭后普通用户将无法提交新的申领申请。'}`)) return;
+  
+  const res = await api('POST', '/api/materials/settings', { enabled: newState });
+  if (res && res.success) {
+    toast(`物资申领已${actionText}`, 'success');
+    renderMaterials();
+  } else {
+    toast(res?.error || '操作失败', 'error');
   }
 }
 
@@ -1763,7 +1802,8 @@ async function renderApplications() {
           <thead>
             <tr>
               <th>申请时间</th>
-              <th>申请人</th>
+              <th>申领人</th>
+              <th>申请人账号</th>
               <th>部门</th>
               <th>物资名称</th>
               <th>规格</th>
@@ -1800,6 +1840,7 @@ function renderApplicationsRows(apps) {
     
     return `<tr data-id="${app.id}">
       <td>${new Date(app.createdAt).toLocaleString('zh-CN')}</td>
+      <td>${escHtml(app.applicantName || '-')}</td>
       <td>${escHtml(app.username)}</td>
       <td>${escHtml(app.departmentName)}</td>
       <td>${escHtml(app.materialName)}</td>
