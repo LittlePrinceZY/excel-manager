@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 推送代码 - 小白图文教程</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .step-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+        .step-desc {
+            color: #666;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .browser-mockup {
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+        }
+        .browser-header {
+            background: #e9ecef;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+        .browser-url {
+            background: white;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            flex: 1;
+            margin-left: 10px;
+        }
+        .browser-content {
+            padding: 24px;
+        }
+        .form-field {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .radio-circle {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .radio-circle.selected::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .checkbox-box {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2ea44f 0%, #22863a 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-green {
+            background: linear-gradient(135deg, #2ea44f 0%, #22863a 100%);
+        }
+        .btn-purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            margin: 16px 0;
+            position: relative;
+        }
+        .code-comment {
+            color: #6a9955;
+        }
+        .code-command {
+            color: #4ec9b0;
+        }
+        .code-string {
+            color: #ce9178;
+        }
+        .code-prompt {
+            color: #858585;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #3c3c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background: #505050;
+        }
+        .highlight-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+        .highlight-box.danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .highlight-box.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .highlight-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .arrow-down {
+            text-align: center;
+            font-size: 32px;
+            color: white;
+            margin: 10px 0;
+            opacity: 0.7;
+        }
+        .tip-list {
+            list-style: none;
+            padding: 0;
+        }
+        .tip-list li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+            font-size: 14px;
+            color: #555;
+        }
+        .tip-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .screenshot-placeholder {
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            color: #999;
+            margin: 16px 0;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f3f4;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .nav-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-tab.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        .token-steps {
+            display: none;
+        }
+        .token-steps.active {
+            display: block;
+        }
+        .settings-menu {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .menu-item {
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .menu-item:hover {
+            background: #e9ecef;
+        }
+        .menu-item.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            font-weight: 600;
+        }
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            .step-card {
+                padding: 20px;
+            }
+            .step-title {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 GitHub 推送代码教程</h1>
+            <p>小白也能看懂的图文步骤，把代码上传到 GitHub</p>
+        </div>
+
+        <!-- 步骤 1 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div>
+                    <div class="step-title">在 GitHub 创建仓库</div>
+                    <div class="step-desc">先给代码找个"家"</div>
+                </div>
+            </div>
+            
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot dot-red"></div>
+                    <div class="browser-dot dot-yellow"></div>
+                    <div class="browser-dot dot-green"></div>
+                    <div class="browser-url">github.com/new</div>
+                </div>
+                <div class="browser-content">
+                    <div class="form-field">
+                        <label class="form-label">Repository name *</label>
+                        <input type="text" class="form-input" value="excel-manager" readonly style="background: #e8f4f8;">
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="form-label">Description (可选)</label>
+                        <input type="text" class="form-input" value="Excel数据管理系统" readonly>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="form-label">Visibility</label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <div class="radio-circle selected"></div>
+                                <span>Public 公开（免费）</span>
+                            </div>
+                            <div class="radio-item">
+                                <div class="radio-circle"></div>
+                                <span>Private 私有</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <div class="checkbox-item">
+                            <div class="checkbox-box"></div>
+                            <span>Add a README file ❌ 不要勾选</span>
+                        </div>
+                        <div class="checkbox-item">
+                            <div class="checkbox-box"></div>
+                            <span>Add .gitignore ❌ 不要勾选</span>
+                        </div>
+                        <div class="checkbox-item">
+                            <div class="checkbox-box"></div>
+                            <span>Choose a license ❌ 不要勾选</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 24px;">
+                        <button class="btn-primary btn-green">
+                            <span>➕</span> Create repository
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <div class="highlight-title">💡 注意</div>
+                <p>下面的三个复选框都<strong>不要勾选</strong>！因为我们已经在本地创建了 Git 仓库。</p>
+            </div>
+        </div>
+
+        <div class="arrow-down">⬇️</div>
+
+        <!-- 步骤 2 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div>
+                    <div class="step-title">复制 GitHub 提供的命令</div>
+                    <div class="step-desc">创建后会看到这个页面</div>
+                </div>
+            </div>
+
+            <div class="browser-mockup">
+                <div class="browser-header">
+                    <div class="browser-dot dot-red"></div>
+                    <div class="browser-dot dot-yellow"></div>
+                    <div class="browser-dot dot-green"></div>
+                    <div class="browser-url">github.com/你的用户名/excel-manager</div>
+                </div>
+                <div class="browser-content">
+                    <p style="font-size: 14px; color: #666; margin-bottom: 16px;">
+                        <strong>…or push an existing repository from the command line</strong>
+                    </p>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <span class="code-command">git remote add origin</span> <span class="code-string">https://github.com/你的用户名/excel-manager.git</span><br>
+                        <span class="code-command">git branch</span> -M main<br>
+                        <span class="code-command">git push</span> -u origin main
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box success">
+                <div class="highlight-title">✅ 你不需要自己输入这些命令</div>
+                <p>GitHub 会自动显示，你只需要<strong>点击复制按钮</strong>，然后粘贴到 PowerShell 运行。</p>
+            </div>
+        </div>
+
+        <div class="arrow-down">⬇️</div>
+
+        <!-- 步骤 3 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div>
+                    <div class="step-title">在本地运行命令</div>
+                    <div class="step-desc">把代码推送到 GitHub</div>
+                </div>
+            </div>
+
+            <p style="margin-bottom: 16px; color: #555;">打开 PowerShell，依次运行以下命令：</p>
+
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">复制全部</button>
+                <span class="code-comment"># 进入项目目录</span><br>
+                <span class="code-prompt">PS></span> <span class="code-command">cd</span> <span class="code-string">"c:\Users\Administrator\WorkBuddy\20260331083046"</span><br><br>
+                
+                <span class="code-comment"># 添加远程仓库（把"你的用户名"换成你的GitHub用户名）</span><br>
+                <span class="code-prompt">PS></span> <span class="code-command">git remote add origin</span> <span class="code-string">https://github.com/你的用户名/excel-manager.git</span><br><br>
+                
+                <span class="code-comment"># 切换到 main 分支</span><br>
+                <span class="code-prompt">PS></span> <span class="code-command">git branch</span> -M main<br><br>
+                
+                <span class="code-comment"># 推送代码</span><br>
+                <span class="code-prompt">PS></span> <span class="code-command">git push</span> -u origin main
+            </div>
+
+            <div class="highlight-box danger">
+                <div class="highlight-title">⚠️ 重要：替换用户名</div>
+                <p>把命令中的 <code>你的用户名</code> 换成你的 GitHub 用户名，比如 <code>zhangsan</code></p>
+            </div>
+        </div>
+
+        <div class="arrow-down">⬇️</div>
+
+        <!-- 步骤 4 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <div>
+                    <div class="step-title">输入 GitHub 凭据</div>
+                    <div class="step-desc">第一次推送需要验证身份</div>
+                </div>
+            </div>
+
+            <p style="margin-bottom: 16px; color: #555;">运行 <code>git push</code> 后，会提示输入：</p>
+
+            <div class="code-block">
+                <span class="code-prompt">Username for 'https://github.com':</span> <span style="color: #fff;">你的GitHub用户名</span><br>
+                <span class="code-prompt">Password for 'https://github.com':</span> <span style="color: #fff;">你的Personal Access Token</span>
+            </div>
+
+            <div class="highlight-box danger">
+                <div class="highlight-title">🔐 注意：密码不是登录密码！</div>
+                <p>GitHub 已经不支持用登录密码推送代码了，你需要创建一个 <strong>Personal Access Token（个人访问令牌）</strong>。</p>
+            </div>
+
+            <div style="margin-top: 24px;">
+                <p style="font-weight: 600; margin-bottom: 12px;">👇 点击下面的标签查看如何获取 Token：</p>
+                
+                <div class="nav-tabs">
+                    <div class="nav-tab active" onclick="showTab('token-steps')">图文步骤</div>
+                    <div class="nav-tab" onclick="showTab('token-video')">视频演示</div>
+                </div>
+
+                <div id="token-steps" class="token-steps active">
+                    <div class="browser-mockup">
+                        <div class="browser-header">
+                            <div class="browser-dot dot-red"></div>
+                            <div class="browser-dot dot-yellow"></div>
+                            <div class="browser-dot dot-green"></div>
+                            <div class="browser-url">github.com/settings/tokens</div>
+                        </div>
+                        <div class="browser-content">
+                            <ol style="padding-left: 20px; line-height: 2; color: #555;">
+                                <li>点击右上角头像 → <strong>Settings</strong></li>
+                                <li>左侧最下方 → <strong>Developer settings</strong></li>
+                                <li>左侧 → <strong>Personal access tokens</strong> → <strong>Tokens (classic)</strong></li>
+                                <li>点击 <strong>Generate new token (classic)</strong></li>
+                                <li>填写 Note：<code>excel-manager-deploy</code></li>
+                                <li>勾选 <strong>repo</strong>（完整仓库访问权限）</li>
+                                <li>点击 <strong>Generate token</strong></li>
+                                <li><strong style="color: #dc3545;">立即复制生成的 token！</strong>（只显示一次）</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="token-video" class="token-steps">
+                    <div class="screenshot-placeholder">
+                        <p>🎬 视频演示区域</p>
+                        <p style="font-size: 12px; margin-top: 8px;">建议搜索："GitHub Personal Access Token 创建教程"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow-down">⬇️</div>
+
+        <!-- 步骤 5 -->
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-number">5</div>
+                <div>
+                    <div class="step-title">验证推送成功</div>
+                    <div class="step-desc">看到绿色对勾就成功了！</div>
+                </div>
+            </div>
+
+            <p style="margin-bottom: 16px; color: #555;">如果看到类似下面的输出，说明成功了：</p>
+
+            <div class="code-block">
+                <span style="color: #7ee787;">Enumerating objects: 21, done.</span><br>
+                <span style="color: #7ee787;">Counting objects: 100% (21/21), done.</span><br>
+                <span style="color: #7ee787;">Writing objects: 100% (21/21), 45.23 KiB | 15.08 MiB/s, done.</span><br>
+                <span style="color: #7ee787;">To https://github.com/你的用户名/excel-manager.git</span><br>
+                <span style="color: #7ee787;"> * [new branch]      main -> main</span><br>
+                <span style="color: #7ee787;">branch 'main' set up to track 'origin/main'.</span>
+            </div>
+
+            <div class="highlight-box success">
+                <div class="highlight-title">🎉 恭喜！代码已上传到 GitHub</div>
+                <p>刷新 GitHub 页面，应该能看到你的代码文件列表了。接下来就可以去 Railway 部署了！</p>
+            </div>
+
+            <div style="margin-top: 24px; text-align: center;">
+                <a href="https://railway.app" target="_blank" style="text-decoration: none;">
+                    <button class="btn-primary btn-purple" style="font-size: 16px; padding: 14px 32px;">
+                        <span>🚀</span> 前往 Railway 部署
+                    </button>
+                </a>
+            </div>
+        </div>
+
+        <!-- 常见问题 -->
+        <div class="step-card" style="background: #f8f9fa;">
+            <div class="step-header">
+                <div class="step-number" style="background: #6c757d;">?</div>
+                <div>
+                    <div class="step-title">常见问题</div>
+                    <div class="step-desc">遇到问题先看这里</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <div style="margin-bottom: 16px; padding: 16px; background: white; border-radius: 8px;">
+                    <p style="font-weight: 600; margin-bottom: 8px;">Q: 提示 "remote origin already exists"</p>
+                    <p style="color: #666; font-size: 14px;">A: 运行 <code>git remote remove origin</code> 删除旧的，再重新添加</p>
+                </div>
+                <div style="margin-bottom: 16px; padding: 16px; background: white; border-radius: 8px;">
+                    <p style="font-weight: 600; margin-bottom: 8px;">Q: 提示 "Authentication failed"</p>
+                    <p style="color: #666; font-size: 14px;">A: 确认使用的是 Personal Access Token，不是登录密码</p>
+                </div>
+                <div style="padding: 16px; background: white; border-radius: 8px;">
+                    <p style="font-weight: 600; margin-bottom: 8px;">Q: 提示 "Permission denied"</p>
+                    <p style="color: #666; font-size: 14px;">A: 创建 Token 时要勾选 <strong>repo</strong> 权限</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(btn) {
+            const codeBlock = btn.parentElement;
+            const codeText = codeBlock.innerText.replace('复制', '').replace('复制全部', '').trim();
+            navigator.clipboard.writeText(codeText).then(() => {
+                btn.textContent = '已复制!';
+                setTimeout(() => btn.textContent = '复制', 2000);
+            });
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.token-steps').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
