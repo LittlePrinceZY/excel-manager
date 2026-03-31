@@ -37,6 +37,7 @@ const excelRouter = require('./routes/excel');
 const logsRouter = require('./routes/logs');
 const materialsRouter = require('./routes/materials');
 const departmentsRouter = require('./routes/departments');
+const workflowRouter = require('./routes/workflow');
 
 // 中间件
 app.use(express.json({ limit: '50mb' }));
@@ -63,6 +64,7 @@ app.use('/api/excel', excelRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/materials', materialsRouter);
 app.use('/api/departments', departmentsRouter);
+app.use('/api/workflow', workflowRouter);
 
 // SPA 回退
 app.get('*', (req, res) => {

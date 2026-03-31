@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "id": "48b3ce18-239a-471e-8236-0bbce65e39f2",
+      "username": "Admin",
+      "password": "$2a$10$HlLYMuR7oJ6XFMhxdYA09OaecSt4AWkRsQ4R5PoRMXCoe5/.Zc7oG",
+      "role": "admin",
+      "createdAt": "2026-03-31T00:47:39.411Z",
+      "loginAttempts": 0,
+      "lockedUntil": null
+    },
+    {
+      "id": "95c56cce-a43f-4002-9bc3-21097f9d6ac1",
+      "username": "liuwei",
+      "password": "$2a$10$kI6T2eXE8lMLrb.R7XskbeOLTk2wvKEG3kwXuyNarsea8yil7vVHG",
+      "role": "user",
+      "createdAt": "2026-03-31T00:51:10.695Z",
+      "loginAttempts": 0,
+      "lockedUntil": null
+    }
+  ]
+}

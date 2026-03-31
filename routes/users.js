@@ -223,17 +223,23 @@ router.post('/import', requireAdmin, uploadMiddleware, (req, res) => {
     const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
     
     if (data.length < 2) {
-      return res.status(400).json({ error: 'Excel 文件为空或格式不正确' });
+      return res.status(400).json({ error: 'Excel 文件为空或格式不正确，至少需要包含表头和一行数据' });
     }
     
-    const headers = data[0];
-    const usernameIdx = headers.findIndex(h => /用户名|账号|姓名/i.test(h));
-    const passwordIdx = headers.findIndex(h => /密码|初始密码/i.test(h));
-    const roleIdx = headers.findIndex(h => /角色|权限/i.test(h));
-    const deptIdx = headers.findIndex(h => /部门/i.test(h));
+    // 标准化表头（去除空格、转小写）
+    const headers = data[0].map(h => String(h || '').trim().toLowerCase().replace(/\s+/g, ''));
+    
+    // 更灵活的列名匹配
+    const usernameIdx = headers.findIndex(h => /用户名|账号|姓名|user(name)?|login/i.test(h));
+    const passwordIdx = headers.findIndex(h => /密码|初始密码|pwd|password/i.test(h));
+    const roleIdx = headers.findIndex(h => /角色|权限|role|身份/i.test(h));
+    const deptIdx = headers.findIndex(h => /部门|dept|department|科室|小组/i.test(h));
     
     if (usernameIdx === -1) {
-      return res.status(400).json({ error: '未找到用户名列，请确保列名包含"用户名"、"账号"或"姓名"' });
+      return res.status(400).json({ 
+        error: '未找到用户名列，请确保列名包含"用户名"、"账号"、"姓名"、"username"等关键字',
+        detectedHeaders: data[0]
+      });
     }
     
     const depts = getDepartments();
@@ -325,20 +331,40 @@ router.get('/export', requireAdmin, (req, res) => {
 
 // 下载导入模板
 router.get('/template', requireAdmin, (req, res) => {
-  const template = [
-    { 用户名: 'zhangsan', 密码: '123456', 角色: 'user', 部门: '技术部' },
-    { 用户名: 'lisi', 密码: '123456', 角色: 'user', 部门: '财务部' },
-    { 用户名: 'wangwu', 密码: '123456', 角色: 'admin', 部门: '管理部' },
-  ];
-  
-  const worksheet = xlsx.utils.json_to_sheet(template);
-  const workbook = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(workbook, worksheet, '导入模板');
-  
-  const exportPath = path.join(__dirname, '..', 'uploads', 'users_template.xlsx');
-  xlsx.writeFile(workbook, exportPath);
-  
-  res.download(exportPath, '用户导入模板.xlsx');
+  try {
+    // 获取当前部门列表作为示例
+    const depts = getDepartments();
+    const deptExamples = depts.length > 0 ? depts.slice(0, 3).map(d => d.name) : ['技术部', '财务部', '管理部'];
+    
+    const template = [
+      { 用户名: 'zhangsan', 密码: '123456', 角色: 'user', 部门: deptExamples[0] || '技术部' },
+      { 用户名: 'lisi', 密码: '123456', 角色: 'user', 部门: deptExamples[1] || '财务部' },
+      { 用户名: 'wangwu', 密码: '123456', 角色: 'admin', 部门: deptExamples[2] || '管理部' },
+    ];
+    
+    const worksheet = xlsx.utils.json_to_sheet(template);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, '导入模板');
+    
+    // 确保 uploads 目录存在
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    if (!require('fs').existsSync(uploadsDir)) {
+      require('fs').mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    const exportPath = path.join(uploadsDir, 'users_template.xlsx');
+    xlsx.writeFile(workbook, exportPath);
+    
+    res.download(exportPath, '用户导入模板.xlsx', (err) => {
+      if (err) {
+        console.error('下载模板失败:', err);
+        res.status(500).json({ error: '下载失败: ' + err.message });
+      }
+    });
+  } catch (err) {
+    console.error('生成模板失败:', err);
+    res.status(500).json({ error: '生成模板失败: ' + err.message });
+  }
 });
 
 module.exports = router;
